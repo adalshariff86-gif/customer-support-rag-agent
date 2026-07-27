@@ -5,11 +5,10 @@ Public API for Pydantic models used across the application.
 """
 
 from app.models.chat import (
+    ChatFeedback,
     ChatRequest,
     ChatResponse,
-    ChatMessage,
     SourceDocument,
-    StreamingChatResponse,
 )
 from app.models.health import (
     DependencyHealth,
@@ -17,6 +16,7 @@ from app.models.health import (
     HealthCheckResponse,
     LivenessResponse,
     ReadinessResponse,
+    ReadinessStatus,
 )
 from app.models.error import (
     ErrorResponse,
@@ -33,17 +33,17 @@ from app.models.session import (
 
 __all__ = [
     # Chat
+    "ChatFeedback",
     "ChatRequest",
     "ChatResponse",
-    "ChatMessage",
     "SourceDocument",
-    "StreamingChatResponse",
     # Health
     "DependencyHealth",
     "DependencyStatus",
     "HealthCheckResponse",
     "LivenessResponse",
     "ReadinessResponse",
+    "ReadinessStatus",
     # Error
     "ErrorResponse",
     "ValidationErrorResponse",

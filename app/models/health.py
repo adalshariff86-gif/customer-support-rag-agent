@@ -133,6 +133,13 @@ class LivenessResponse(BaseModel):
     }
 
 
+class ReadinessStatus(str, Enum):
+    """Readiness status for Kubernetes probes."""
+
+    READY = "ready"
+    NOT_READY = "not_ready"
+
+
 class ReadinessResponse(BaseModel):
     """Kubernetes readiness probe response.
 
@@ -144,7 +151,8 @@ class ReadinessResponse(BaseModel):
         checks: Optional list of critical dependency checks.
     """
 
-    status: DependencyStatus = Field(..., description="Readiness status.", examples=["ready"])
+    status: ReadinessStatus = Field(..., description="Readiness status.", examples=["ready"])
+
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="UTC timestamp.",
