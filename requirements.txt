@@ -10,7 +10,7 @@ python-dotenv==1.0.1
 
 # RAG / Embeddings (Ticket 5)
 sentence-transformers==3.1.0
-# chromadb==0.5.5
+chromadb==0.5.5
 
 # Testing
 pytest==8.3.3

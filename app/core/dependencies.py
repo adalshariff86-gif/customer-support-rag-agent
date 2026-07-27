@@ -25,8 +25,9 @@ from app.core.logger import request_id_ctx, session_id_ctx, get_logger
 
 logger = get_logger(__name__)
 
-# ── Singleton cache for embedding provider ────────
+# ── Singleton caches ──────────────────────────────
 _embedding_provider: Any = None
+_vector_store: Any = None
 
 
 # ── Request Context ───────────────────────────────
@@ -78,17 +79,22 @@ def get_embedding_provider() -> Any:
 
 
 def get_vector_store() -> Any:
-    """Provide the ChromaDB vector store client.
+    """Provide the ChromaDB vector store (singleton).
 
     Returns:
-        VectorStore instance (not yet implemented).
+        ChromaVectorStore instance.
 
-    Raises:
-        NotImplementedError: Until Ticket 3 implements VectorStore.
+    Note:
+        The store is created once and cached for the lifetime of the
+        application.  ChromaDB collections persist to disk automatically.
     """
-    raise NotImplementedError(
-        "VectorStore is not yet implemented. See Ticket 3."
-    )
+    global _vector_store
+    if _vector_store is None:
+        from app.vectorstore.chroma_store import ChromaVectorStore
+
+        _vector_store = ChromaVectorStore()
+        logger.info("VectorStore singleton created")
+    return _vector_store
 
 
 def get_memory_service() -> Any:
