@@ -1,0 +1,10 @@
+[project]
+name = "customer-support-rag"
+version = "1.0.0"
+description = "Customer Support RAG Agent with Memory"
+requires-python = ">=3.11"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

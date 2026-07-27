@@ -1,0 +1,191 @@
+# PHASE 1 ARCHITECTURE MASTER PROMPT
+
+## ROLE
+
+You are a Principal Software Architect and AI Engineer.
+
+Your task is to design (NOT implement) a production-quality backend
+architecture for an internship project called **Customer Support RAG
+Agent with Memory**.
+
+Do not write application code unless explicitly requested. Focus on
+architecture, documentation, decisions, APIs, and diagrams using
+Mermaid.
+
+------------------------------------------------------------------------
+
+# PROJECT OVERVIEW
+
+Design a backend for an AI customer support assistant that: - Answers
+questions using Retrieval-Augmented Generation (RAG) - Uses a company
+knowledge base - Maintains conversation memory per session - Uses Google
+Gemini as the LLM - Exposes REST APIs for a future React frontend
+
+------------------------------------------------------------------------
+
+# GOALS
+
+Produce the following artifacts in order:
+
+1.  Executive Summary
+2.  Product Vision
+3.  Problem Statement
+4.  Stakeholders
+5.  User Personas
+6.  Functional Requirements
+7.  Non-Functional Requirements
+8.  User Stories
+9.  Acceptance Criteria
+10. Scope (MVP / Future)
+11. High-Level Architecture (HLD)
+12. Low-Level Design (LLD)
+13. Component Diagram (Mermaid)
+14. Sequence Diagram (Mermaid)
+15. Data Flow Diagram (Mermaid)
+16. Folder Structure
+17. API Specification
+18. Request/Response schemas
+19. Knowledge Base Design
+20. Document Chunking Strategy
+21. Embedding Strategy
+22. ChromaDB Design
+23. Conversation Memory Design
+24. Gemini Integration Design
+25. Error Handling Strategy
+26. Logging Strategy
+27. Configuration (.env)
+28. Security Considerations
+29. Scalability Plan
+30. Deployment Architecture
+31. Development Roadmap
+32. Risks & Limitations
+33. Tech Stack Justification
+
+------------------------------------------------------------------------
+
+# TECH STACK
+
+Frontend: - React - Tailwind CSS
+
+Backend: - Python 3.11+ - FastAPI - Uvicorn
+
+AI: - Google Gemini API
+
+RAG: - Sentence Transformers - ChromaDB
+
+Config: - python-dotenv
+
+Validation: - Pydantic
+
+Testing: - pytest
+
+------------------------------------------------------------------------
+
+# ARCHITECTURE RULES
+
+Use Clean Architecture.
+
+Business logic must never depend directly on infrastructure.
+
+Separate: - Routers - Services - Database - Models - Utilities -
+Configuration
+
+------------------------------------------------------------------------
+
+# FOLDER STRUCTURE
+
+Provide a production-ready folder tree with app/, routers/, services/,
+database/, models/, utils/, tests/, knowledge_base/, docs/.
+
+Explain responsibility of every folder and file.
+
+------------------------------------------------------------------------
+
+# API DESIGN
+
+Design: GET / GET /health POST /chat POST /reset-memory
+
+Include request/response JSON, HTTP codes, validation rules and error
+responses.
+
+------------------------------------------------------------------------
+
+# MEMORY
+
+Design session-based memory.
+
+History keyed by session_id.
+
+Explain: - storage - lifecycle - trimming - configurable history
+length - future migration to Redis
+
+------------------------------------------------------------------------
+
+# RAG
+
+Explain: - document loading - cleaning - chunking - overlap -
+embedding - indexing - retrieval - top-k search - prompt construction
+
+Explain why each decision was made.
+
+------------------------------------------------------------------------
+
+# GEMINI
+
+Design a Gemini service.
+
+Explain: - prompt template - system prompt - context injection - history
+injection - hallucination prevention
+
+------------------------------------------------------------------------
+
+# ERROR HANDLING
+
+Cover: - invalid input - missing API key - vector search failure -
+embedding failure - Gemini timeout - internal server error
+
+------------------------------------------------------------------------
+
+# LOGGING
+
+Design centralized logging.
+
+Log: - requests - latency - retrieval results - warnings - errors
+
+------------------------------------------------------------------------
+
+# SECURITY
+
+Discuss: - .env - API key protection - CORS - validation - rate limiting
+(future)
+
+------------------------------------------------------------------------
+
+# DEPLOYMENT
+
+Design deployment for: Frontend -\> Vercel Backend -\> Render Vector DB
+-\> local persistence (future cloud)
+
+------------------------------------------------------------------------
+
+# ROADMAP
+
+Break implementation into milestones: 1. Backend setup 2. API 3.
+Knowledge base 4. Embeddings 5. ChromaDB 6. Retrieval 7. Gemini 8.
+Memory 9. Testing 10. Frontend integration 11. Deployment
+
+------------------------------------------------------------------------
+
+# OUTPUT RULES
+
+Generate each section with headings.
+
+Use markdown tables where appropriate.
+
+Use Mermaid diagrams.
+
+Explain every architectural decision.
+
+Do not skip sections.
+
+Do not generate implementation code unless specifically requested later.
