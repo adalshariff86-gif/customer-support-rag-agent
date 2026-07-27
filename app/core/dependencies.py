@@ -25,6 +25,9 @@ from app.core.logger import request_id_ctx, session_id_ctx, get_logger
 
 logger = get_logger(__name__)
 
+# ── Singleton cache for embedding provider ────────
+_embedding_provider: Any = None
+
 
 # ── Request Context ───────────────────────────────
 async def get_request_id() -> str:
@@ -52,18 +55,26 @@ async def bind_session_id(session_id: str) -> str:
 
 
 # ── Service Stubs (Ticket 3+) ────────────────────
-def get_embedding_service() -> Any:
-    """Provide the SentenceTransformer embedding service.
+def get_embedding_provider() -> Any:
+    """Provide the SentenceTransformer embedding provider (singleton).
 
     Returns:
-        EmbeddingService instance (not yet implemented).
+        SentenceTransformerEmbeddingProvider instance.
 
-    Raises:
-        NotImplementedError: Until Ticket 3 implements EmbeddingService.
+    Note:
+        The provider is created once and cached for the lifetime of the
+        application.  The underlying SentenceTransformer model is loaded
+        lazily on first use.
     """
-    raise NotImplementedError(
-        "EmbeddingService is not yet implemented. See Ticket 3."
-    )
+    global _embedding_provider
+    if _embedding_provider is None:
+        from app.embeddings.sentence_transformer import (
+            SentenceTransformerEmbeddingProvider,
+        )
+
+        _embedding_provider = SentenceTransformerEmbeddingProvider()
+        logger.info("EmbeddingProvider singleton created")
+    return _embedding_provider
 
 
 def get_vector_store() -> Any:

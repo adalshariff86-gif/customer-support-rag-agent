@@ -170,3 +170,21 @@ class DocumentException(AppException):
         details: Optional[dict[str, Any]] = None,
     ) -> None:
         super().__init__(message=message, details=details)
+
+
+# ── Embedding ────────────────────────────────────
+class EmbeddingException(AppException):
+    """Raised when embedding generation fails.
+
+    Maps to HTTP 500 Internal Server Error.
+    """
+
+    status_code: int = 500
+    error_code: str = "EMBEDDING_ERROR"
+
+    def __init__(
+        self,
+        message: str = "Embedding generation failed.",
+        details: Optional[dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(message=message, details=details)

@@ -25,9 +25,16 @@ class Settings(BaseSettings):
         default="./data/chroma", description="ChromaDB persistence path"
     )
 
-    # ── Embedding Model (used in future tickets) ──
+    # ── Embedding Model (Ticket 5) ─────────────────
     EMBEDDING_MODEL_NAME: str = Field(
-        default="all-MiniLM-L6-v2", description="Sentence Transformer model name"
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        description="Sentence Transformer model name",
+    )
+    EMBEDDING_BATCH_SIZE: int = Field(
+        default=32, description="Batch size for embedding generation"
+    )
+    EMBEDDING_DEVICE: str = Field(
+        default="cpu", description="Device for embedding model (cpu/cuda)"
     )
 
     # ── Memory ────────────────────────────────────
