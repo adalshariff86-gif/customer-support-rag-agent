@@ -86,6 +86,33 @@ class RAGOrchestrator:
 
     # ── Public API ─────────────────────────────────
 
+    def create_session(self) -> str:
+        """Create a new conversation session.
+
+        Delegates to the injected ``MemoryService`` to generate and
+        register a new session UUID.
+
+        Returns:
+            A new session UUID string.
+
+        Raises:
+            MemoryException: If session creation fails.
+        """
+        try:
+            session_id = self._memory_service.create_session()
+            logger.info(
+                "Session created via orchestrator",
+                extra={"session_id": session_id},
+            )
+            return session_id
+        except MemoryException:
+            raise
+        except Exception as exc:
+            raise MemoryException(
+                message="Failed to create session via orchestrator.",
+                details={"error": str(exc)},
+            ) from exc
+
     def chat(self, session_id: str, query: str) -> ChatResponse:
         """Process a user chat message through the full RAG pipeline.
 

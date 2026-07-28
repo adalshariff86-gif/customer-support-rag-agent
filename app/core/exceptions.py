@@ -208,6 +208,27 @@ class RetrievalException(AppException):
         super().__init__(message=message, details=details)
 
 
+# ── Chat Service ────────────────────────────────
+class ChatException(AppException):
+    """Raised when the chat service encounters an unexpected error.
+
+    Wraps any unexpected failure that is not already covered by a more
+    specific domain exception (ValidationException, MemoryException, etc.).
+
+    Maps to HTTP 500 Internal Server Error.
+    """
+
+    status_code: int = 500
+    error_code: str = "CHAT_ERROR"
+
+    def __init__(
+        self,
+        message: str = "Chat service error.",
+        details: Optional[dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(message=message, details=details)
+
+
 # ── RAG Orchestrator ─────────────────────────────
 class RAGException(AppException):
     """Raised when the RAG orchestration pipeline encounters an unexpected error.

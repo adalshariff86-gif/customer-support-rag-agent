@@ -18,6 +18,7 @@ from app.services.memory_service import (
     Conversation,
 )
 from app.services.rag_orchestrator import RAGOrchestrator
+from app.services.chat_service import ChatService
 
 __all__ = [
     "Document",
@@ -34,4 +35,5 @@ __all__ = [
     "MemoryMessage",
     "Conversation",
     "RAGOrchestrator",
+    "ChatService",
 ]

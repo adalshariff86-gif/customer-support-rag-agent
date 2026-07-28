@@ -32,6 +32,7 @@ _retrieval_service: Any = None
 _memory_service: Any = None
 _llm_provider: Any = None
 _rag_orchestrator: Any = None
+_chat_service: Any = None
 
 
 # ── Request Context ───────────────────────────────
@@ -167,11 +168,8 @@ def get_llm_service() -> Any:
     return _llm_provider
 
 
-def get_chat_service() -> Any:
+def get_rag_orchestrator() -> Any:
     """Provide the RAG Orchestrator (singleton).
-
-    This is the top-level dependency that composes MemoryService,
-    RetrievalService, and LLMProvider into the chat pipeline.
 
     Returns:
         RAGOrchestrator instance wired to all required services.
@@ -194,3 +192,26 @@ def get_chat_service() -> Any:
         )
         logger.info("RAGOrchestrator singleton created")
     return _rag_orchestrator
+
+
+def get_chat_service() -> Any:
+    """Provide the Chat Service (singleton).
+
+    This is the top-level business layer dependency that wraps the
+    RAG Orchestrator and exposes the public chat API.
+
+    Returns:
+        ChatService instance wired to the RAGOrchestrator.
+
+    Note:
+        The service is created once and cached for the lifetime of
+        the application.
+    """
+    global _chat_service
+    if _chat_service is None:
+        from app.services.chat_service import ChatService
+
+        orchestrator = get_rag_orchestrator()
+        _chat_service = ChatService(orchestrator=orchestrator)
+        logger.info("ChatService singleton created")
+    return _chat_service
