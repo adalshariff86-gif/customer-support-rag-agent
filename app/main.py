@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api import chat_router
 from app.core.config import settings
 from app.core.exceptions import AppException
 from app.core.logger import get_logger, request_id_ctx
@@ -61,6 +62,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── API Routers ──────────────────────────────────
+app.include_router(chat_router)
 
 
 # ── Request ID Middleware ─────────────────────────
