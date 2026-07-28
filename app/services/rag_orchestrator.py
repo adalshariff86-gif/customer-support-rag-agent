@@ -147,12 +147,12 @@ class RAGOrchestrator:
 
         try:
             # ── 1. Validate ────────────────────────
-            logger.info(
-                "RAG pipeline started",
-                extra={"query_length": len(query)},
-            )
             validated_session_id, validated_query = self._validate(
                 session_id, query
+            )
+            logger.info(
+                "RAG pipeline started",
+                extra={"query_length": len(validated_query)},
             )
 
             # ── 2. Ensure session exists ───────────
@@ -259,7 +259,7 @@ class RAGOrchestrator:
         validated_query = query.strip()
 
         if session_id is not None and (
-            not isinstance(session_id, str) or not session_id.strip()
+            not isinstance(session_id, str) or (session_id and not session_id.strip())
         ):
             raise ValidationException(
                 message="Session ID must be a non-empty string when provided.",
