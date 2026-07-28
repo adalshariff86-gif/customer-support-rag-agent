@@ -28,6 +28,7 @@ logger = get_logger(__name__)
 # ── Singleton caches ──────────────────────────────
 _embedding_provider: Any = None
 _vector_store: Any = None
+_retrieval_service: Any = None
 
 
 # ── Request Context ───────────────────────────────
@@ -95,6 +96,32 @@ def get_vector_store() -> Any:
         _vector_store = ChromaVectorStore()
         logger.info("VectorStore singleton created")
     return _vector_store
+
+
+def get_retrieval_service() -> Any:
+    """Provide the RetrievalService (singleton).
+
+    Returns:
+        RetrievalService instance wired to the existing EmbeddingProvider
+        and VectorStore singletons.
+
+    Note:
+        The service is created once and cached for the lifetime of the
+        application.  It reuses the existing singletons for embedding
+        and vector store.
+    """
+    global _retrieval_service
+    if _retrieval_service is None:
+        from app.services.retrieval_service import RetrievalService
+
+        embedding_provider = get_embedding_provider()
+        vector_store = get_vector_store()
+        _retrieval_service = RetrievalService(
+            embedding_provider=embedding_provider,
+            vector_store=vector_store,
+        )
+        logger.info("RetrievalService singleton created")
+    return _retrieval_service
 
 
 def get_memory_service() -> Any:

@@ -188,3 +188,21 @@ class EmbeddingException(AppException):
         details: Optional[dict[str, Any]] = None,
     ) -> None:
         super().__init__(message=message, details=details)
+
+
+# ── Retrieval ────────────────────────────────────
+class RetrievalException(AppException):
+    """Raised when the retrieval service encounters an unexpected error.
+
+    Maps to HTTP 500 Internal Server Error.
+    """
+
+    status_code: int = 500
+    error_code: str = "RETRIEVAL_ERROR"
+
+    def __init__(
+        self,
+        message: str = "Retrieval service error.",
+        details: Optional[dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(message=message, details=details)

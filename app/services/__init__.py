@@ -7,6 +7,11 @@ from app.services.document_loader import (
 )
 from app.services.text_chunker import TextChunker
 from app.services.knowledge_base import KnowledgeBaseService
+from app.services.retrieval_service import (
+    RetrievalService,
+    RetrievedContext,
+    RetrievedDocument,
+)
 
 __all__ = [
     "Document",
@@ -16,4 +21,7 @@ __all__ = [
     "DocumentLoader",
     "TextChunker",
     "KnowledgeBaseService",
+    "RetrievalService",
+    "RetrievedContext",
+    "RetrievedDocument",
 ]
