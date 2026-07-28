@@ -206,3 +206,24 @@ class RetrievalException(AppException):
         details: Optional[dict[str, Any]] = None,
     ) -> None:
         super().__init__(message=message, details=details)
+
+
+# ── RAG Orchestrator ─────────────────────────────
+class RAGException(AppException):
+    """Raised when the RAG orchestration pipeline encounters an unexpected error.
+
+    Wraps any unexpected failure that is not already covered by a more
+    specific domain exception (LLMException, MemoryException, etc.).
+
+    Maps to HTTP 500 Internal Server Error.
+    """
+
+    status_code: int = 500
+    error_code: str = "RAG_ERROR"
+
+    def __init__(
+        self,
+        message: str = "RAG pipeline error.",
+        details: Optional[dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(message=message, details=details)

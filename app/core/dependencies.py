@@ -30,6 +30,8 @@ _embedding_provider: Any = None
 _vector_store: Any = None
 _retrieval_service: Any = None
 _memory_service: Any = None
+_llm_provider: Any = None
+_rag_orchestrator: Any = None
 
 
 # ── Request Context ───────────────────────────────
@@ -146,31 +148,49 @@ def get_memory_service() -> Any:
 
 
 def get_llm_service() -> Any:
-    """Provide the Google Gemini LLM client.
+    """Provide the Google Gemini LLM provider (singleton).
 
     Returns:
-        GeminiService instance (not yet implemented).
+        GeminiProvider instance wired to the configured API key and model.
 
-    Raises:
-        NotImplementedError: Until Ticket 5 implements GeminiService.
+    Note:
+        The provider is created once and cached for the lifetime of the
+        application.  The underlying Gemini SDK is initialised lazily
+        on first use.
     """
-    raise NotImplementedError(
-        "GeminiService is not yet implemented. See Ticket 5."
-    )
+    global _llm_provider
+    if _llm_provider is None:
+        from app.llm.gemini_provider import GeminiProvider
+
+        _llm_provider = GeminiProvider()
+        logger.info("LLMProvider singleton created")
+    return _llm_provider
 
 
 def get_chat_service() -> Any:
-    """Provide the orchestrating ChatService.
+    """Provide the RAG Orchestrator (singleton).
 
     This is the top-level dependency that composes MemoryService,
-    EmbeddingService, VectorStore, and GeminiService.
+    RetrievalService, and LLMProvider into the chat pipeline.
 
     Returns:
-        ChatService instance (not yet implemented).
+        RAGOrchestrator instance wired to all required services.
 
-    Raises:
-        NotImplementedError: Until Ticket 6 implements ChatService.
+    Note:
+        The orchestrator is created once and cached for the lifetime of
+        the application.
     """
-    raise NotImplementedError(
-        "ChatService is not yet implemented. See Ticket 6."
-    )
+    global _rag_orchestrator
+    if _rag_orchestrator is None:
+        from app.services.rag_orchestrator import RAGOrchestrator
+
+        retrieval_service = get_retrieval_service()
+        memory_service = get_memory_service()
+        llm_provider = get_llm_service()
+        _rag_orchestrator = RAGOrchestrator(
+            retrieval_service=retrieval_service,
+            memory_service=memory_service,
+            llm_provider=llm_provider,
+        )
+        logger.info("RAGOrchestrator singleton created")
+    return _rag_orchestrator
