@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 _embedding_provider: Any = None
 _vector_store: Any = None
 _retrieval_service: Any = None
+_memory_service: Any = None
 
 
 # ── Request Context ───────────────────────────────
@@ -125,17 +126,23 @@ def get_retrieval_service() -> Any:
 
 
 def get_memory_service() -> Any:
-    """Provide the in-memory conversation history manager.
+    """Provide the in-memory conversation history manager (singleton).
 
     Returns:
-        MemoryService instance (not yet implemented).
+        MemoryService instance wired to the configured message limit.
 
-    Raises:
-        NotImplementedError: Until Ticket 4 implements MemoryService.
+    Note:
+        The service is created once and cached for the lifetime of the
+        application.  Conversation data lives in-process only and is lost
+        on restart.
     """
-    raise NotImplementedError(
-        "MemoryService is not yet implemented. See Ticket 4."
-    )
+    global _memory_service
+    if _memory_service is None:
+        from app.services.memory_service import MemoryService
+
+        _memory_service = MemoryService()
+        logger.info("MemoryService singleton created")
+    return _memory_service
 
 
 def get_llm_service() -> Any:

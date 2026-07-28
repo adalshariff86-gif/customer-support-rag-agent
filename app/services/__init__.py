@@ -12,6 +12,11 @@ from app.services.retrieval_service import (
     RetrievedContext,
     RetrievedDocument,
 )
+from app.services.memory_service import (
+    MemoryService,
+    MemoryMessage,
+    Conversation,
+)
 
 __all__ = [
     "Document",
@@ -24,4 +29,7 @@ __all__ = [
     "RetrievalService",
     "RetrievedContext",
     "RetrievedDocument",
+    "MemoryService",
+    "MemoryMessage",
+    "Conversation",
 ]
