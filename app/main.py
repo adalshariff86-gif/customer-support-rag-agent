@@ -18,38 +18,56 @@ from fastapi.responses import JSONResponse
 
 from app.api import chat_router
 from app.core.config import settings
-from app.core.exceptions import AppException
+from app.core.exceptions import AppException, StartupException
 from app.core.logger import get_logger, request_id_ctx
 from app.core.dependencies import get_request_id
+from app.lifecycle import ApplicationLifecycle
 
 logger = get_logger(__name__)
+
+# ── Module-level lifecycle instance (one per process) ──
+_lifecycle = ApplicationLifecycle()
 
 
 # ── Lifespan (Startup / Shutdown) ─────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Startup:  Initialize connections and services.
+    Startup:  Initialise dependencies, validate config, verify providers.
     Shutdown: Release resources gracefully.
     """
     # ── Startup ───────────────────────────────────
-    logger.info("Starting Customer Support RAG Agent...")
-    logger.info("Environment: %s", settings.APP_ENV)
-    logger.info("Debug mode:  %s", settings.APP_DEBUG)
-    # Future tickets will initialize ChromaDB, EmbeddingService, etc. here.
+    try:
+        await _lifecycle.startup()
+    except StartupException as exc:
+        logger.critical(
+            "Startup failed: %s",
+            exc.message,
+            extra={"details": exc.details},
+        )
+        raise
+    except Exception as exc:
+        logger.critical(
+            "Startup failed with unexpected error: %s",
+            str(exc),
+            exc_info=True,
+        )
+        raise StartupException(
+            message=f"Startup failed: {exc}",
+            details={"error": str(exc)},
+        ) from exc
 
     yield  # Application runs between startup and shutdown
 
     # ── Shutdown ──────────────────────────────────
-    logger.info("Shutting down Customer Support RAG Agent...")
-    # Future tickets will close DB connections, flush logs, etc. here.
+    await _lifecycle.shutdown()
 
 
 # ── Application Instance ──────────────────────────
 app = FastAPI(
     title="Customer Support RAG Agent",
     description="AI customer support assistant powered by RAG with Google Gemini.",
-    version="1.0.0",
+    version=settings.APP_VERSION,
     lifespan=lifespan,
 )
 
@@ -115,7 +133,7 @@ async def root():
     """Root welcome endpoint."""
     return {
         "service": "customer-support-rag",
-        "version": "1.0.0",
+        "version": settings.APP_VERSION,
         "status": "online",
     }
 
@@ -125,15 +143,15 @@ async def root():
 async def health_check():
     """
     Deep health check.
-    Future tickets will ping ChromaDB and Gemini connectivity here.
+
+    Verifies:
+      - Application startup status
+      - Vector database connectivity
+      - Embedding provider status
+      - LLM provider configuration
+      - Uptime and timestamp
+
+    Never exposes API keys or secrets.
     """
     logger.info("Health check requested")
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "environment": settings.APP_ENV,
-        "dependencies": {
-            "chromadb": "not_initialized",
-            "gemini_api": "not_initialized",
-        },
-    }
+    return _lifecycle.health_check()

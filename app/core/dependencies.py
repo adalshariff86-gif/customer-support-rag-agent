@@ -215,3 +215,31 @@ def get_chat_service() -> Any:
         _chat_service = ChatService(orchestrator=orchestrator)
         logger.info("ChatService singleton created")
     return _chat_service
+
+
+# ── Singleton Reset ─────────────────────────────
+def reset_singletons() -> None:
+    """Reset all singleton caches to ``None``.
+
+    This is the **only** function permitted to clear the DI container's
+    singleton instances.  It is called during shutdown to ensure no stale
+    references persist across restarts.
+
+    Note:
+        This function clears references only; it does not call cleanup
+        methods on individual services.  Services that require explicit
+        teardown should be handled by the lifecycle layer before calling
+        this function.
+    """
+    global _embedding_provider, _vector_store, _retrieval_service
+    global _memory_service, _llm_provider, _rag_orchestrator, _chat_service
+
+    _embedding_provider = None
+    _vector_store = None
+    _retrieval_service = None
+    _memory_service = None
+    _llm_provider = None
+    _rag_orchestrator = None
+    _chat_service = None
+
+    logger.info("Singleton caches reset")

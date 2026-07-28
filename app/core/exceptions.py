@@ -229,6 +229,27 @@ class ChatException(AppException):
         super().__init__(message=message, details=details)
 
 
+# ── Startup / Lifecycle ──────────────────────────
+class StartupException(AppException):
+    """Raised when the application fails to start.
+
+    Wraps unexpected failures during dependency initialisation,
+    configuration validation, or health verification at boot time.
+    Maps to HTTP 503 Service Unavailable if encountered after boot,
+    but typically halts the process before it accepts traffic.
+    """
+
+    status_code: int = 503
+    error_code: str = "STARTUP_ERROR"
+
+    def __init__(
+        self,
+        message: str = "Application startup failed.",
+        details: Optional[dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(message=message, details=details)
+
+
 # ── RAG Orchestrator ─────────────────────────────
 class RAGException(AppException):
     """Raised when the RAG orchestration pipeline encounters an unexpected error.

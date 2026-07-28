@@ -121,7 +121,6 @@ class ChatHealthResponse(BaseModel):
     responses={
         200: {
             "description": "Successful chat response with answer and source documents.",
-            "model": ChatResponse,
         },
         422: {"description": "Validation error (empty message, invalid session_id)."},
         502: {"description": "Upstream LLM provider failure."},
@@ -178,7 +177,6 @@ async def chat(
     responses={
         201: {
             "description": "Session created successfully.",
-            "model": NewChatResponse,
         },
         500: {"description": "Internal server error."},
     },
@@ -227,7 +225,6 @@ async def new_chat(
     responses={
         200: {
             "description": "Service is healthy.",
-            "model": ChatHealthResponse,
         },
     },
 )
@@ -259,5 +256,5 @@ async def health_check(
         timestamp=health.get(
             "timestamp", datetime.now(timezone.utc).isoformat()
         ),
-        version=health.get("version", settings.APP_ENV),
+        version=health.get("version", settings.APP_VERSION),
     )
