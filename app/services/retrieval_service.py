@@ -142,7 +142,11 @@ class RetrievalService:
             self._validate_query(query, top_k)
             logger.info(
                 "Retrieval started",
-                extra={"query_length": len(query), "query_preview": query[:50], "top_k": top_k},
+                extra={
+                    "query_length": len(query),
+                    "query_preview": query[:50],
+                    "top_k": top_k,
+                },
             )
 
             # ── 2. Generate query embedding ────────

@@ -14,12 +14,11 @@ Responsibilities:
 Do NOT use for: AI responses, RAG, vector search, embedding generation.
 """
 
-import time
 import threading
+import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from app.core.config import settings
 from app.core.exceptions import MemoryException, ValidationException
@@ -62,8 +61,8 @@ class Conversation:
 
     session_id: str
     messages: list[MemoryMessage] = field(default_factory=list)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 # ── Memory Service ─────────────────────────────────
@@ -81,7 +80,7 @@ class MemoryService:
         User: Hello!
     """
 
-    def __init__(self, max_messages: Optional[int] = None) -> None:
+    def __init__(self, max_messages: int | None = None) -> None:
         """Initialise the memory service.
 
         Args:
@@ -115,7 +114,10 @@ class MemoryService:
                 elapsed_ms = (time.monotonic() - start) * 1000
                 logger.info(
                     "Session created",
-                    extra={"session_id": session_id, "elapsed_ms": round(elapsed_ms, 2)},
+                    extra={
+                        "session_id": session_id,
+                        "elapsed_ms": round(elapsed_ms, 2),
+                    },
                 )
                 return session_id
         except Exception as exc:
@@ -145,7 +147,7 @@ class MemoryService:
         session_id: str,
         role: str,
         content: str,
-        sources: Optional[list[dict]] = None,
+        sources: list[dict] | None = None,
     ) -> None:
         """Append a message to a session's conversation history.
 
@@ -172,7 +174,7 @@ class MemoryService:
                 message = MemoryMessage(
                     role=role,
                     content=content,
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                     sources=sources or [],
                 )
                 conversation.messages.append(message)
@@ -244,7 +246,7 @@ class MemoryService:
             raise MemoryException(message="Failed to retrieve messages.") from exc
 
     def get_recent_messages(
-        self, session_id: str, limit: Optional[int] = None
+        self, session_id: str, limit: int | None = None
     ) -> list[MemoryMessage]:
         """Retrieve the most recent messages from a session.
 
@@ -294,7 +296,9 @@ class MemoryService:
                 extra={"session_id": session_id, "elapsed_ms": round(elapsed_ms, 2)},
                 exc_info=True,
             )
-            raise MemoryException(message="Failed to retrieve recent messages.") from exc
+            raise MemoryException(
+                message="Failed to retrieve recent messages."
+            ) from exc
 
     def get_formatted_history(self, session_id: str) -> str:
         """Return the conversation history as a plain-text string.
@@ -364,11 +368,14 @@ class MemoryService:
             with self._lock:
                 conversation = self._get_conversation_or_raise(session_id)
                 conversation.messages.clear()
-                conversation.updated_at = datetime.now(timezone.utc)
+                conversation.updated_at = datetime.now(UTC)
                 elapsed_ms = (time.monotonic() - start) * 1000
                 logger.info(
                     "Session cleared",
-                    extra={"session_id": session_id, "elapsed_ms": round(elapsed_ms, 2)},
+                    extra={
+                        "session_id": session_id,
+                        "elapsed_ms": round(elapsed_ms, 2),
+                    },
                 )
         except ValidationException:
             raise
@@ -406,7 +413,10 @@ class MemoryService:
                 elapsed_ms = (time.monotonic() - start) * 1000
                 logger.info(
                     "Session deleted",
-                    extra={"session_id": session_id, "elapsed_ms": round(elapsed_ms, 2)},
+                    extra={
+                        "session_id": session_id,
+                        "elapsed_ms": round(elapsed_ms, 2),
+                    },
                 )
         except ValidationException:
             raise

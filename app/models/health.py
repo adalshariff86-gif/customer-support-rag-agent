@@ -4,9 +4,9 @@ Health Models – Pydantic schemas for health check responses.
 Defines structured health check responses for monitoring and orchestration.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -32,16 +32,22 @@ class DependencyHealth(BaseModel):
         checked_at: UTC timestamp of the health check.
     """
 
-    name: str = Field(..., description="Dependency identifier.", examples=["chromadb", "gemini_api"])
-    status: DependencyStatus = Field(..., description="Current health state.", examples=["healthy"])
-    latency_ms: Optional[float] = Field(
+    name: str = Field(
+        ..., description="Dependency identifier.", examples=["chromadb", "gemini_api"]
+    )
+    status: DependencyStatus = Field(
+        ..., description="Current health state.", examples=["healthy"]
+    )
+    latency_ms: float | None = Field(
         default=None, description="Round-trip latency in milliseconds.", examples=[12.5]
     )
-    details: Optional[dict[str, Any]] = Field(
-        default=None, description="Additional context (version, error, etc.).", examples=[{"version": "0.4.22"}]
+    details: dict[str, Any] | None = Field(
+        default=None,
+        description="Additional context (version, error, etc.).",
+        examples=[{"version": "0.4.22"}],
     )
     checked_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp of the check.",
         examples=["2024-01-15T10:30:45.123Z"],
     )
@@ -49,9 +55,23 @@ class DependencyHealth(BaseModel):
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {"name": "chromadb", "status": "healthy", "latency_ms": 12.5, "details": {"version": "0.4.22"}},
-                {"name": "gemini_api", "status": "degraded", "latency_ms": 1250.0, "details": {"error": "high_latency"}},
-                {"name": "embedding_model", "status": "not_initialized", "details": {"reason": "not_loaded"}},
+                {
+                    "name": "chromadb",
+                    "status": "healthy",
+                    "latency_ms": 12.5,
+                    "details": {"version": "0.4.22"},
+                },
+                {
+                    "name": "gemini_api",
+                    "status": "degraded",
+                    "latency_ms": 1250.0,
+                    "details": {"error": "high_latency"},
+                },
+                {
+                    "name": "embedding_model",
+                    "status": "not_initialized",
+                    "details": {"reason": "not_loaded"},
+                },
             ]
         }
     }
@@ -68,13 +88,19 @@ class HealthCheckResponse(BaseModel):
         dependencies: Per-dependency health details.
     """
 
-    status: DependencyStatus = Field(..., description="Overall health status.", examples=["healthy"])
+    status: DependencyStatus = Field(
+        ..., description="Overall health status.", examples=["healthy"]
+    )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp of the check.",
         examples=["2024-01-15T10:30:45.123Z"],
     )
-    environment: str = Field(..., description="Deployment environment.", examples=["development", "production"])
+    environment: str = Field(
+        ...,
+        description="Deployment environment.",
+        examples=["development", "production"],
+    )
     version: str = Field(..., description="Application version.", examples=["1.0.0"])
     dependencies: list[DependencyHealth] = Field(
         default_factory=list, description="Per-dependency health details."
@@ -89,8 +115,18 @@ class HealthCheckResponse(BaseModel):
                     "environment": "development",
                     "version": "1.0.0",
                     "dependencies": [
-                        {"name": "chromadb", "status": "healthy", "latency_ms": 12.5, "details": {"version": "0.4.22"}},
-                        {"name": "gemini_api", "status": "healthy", "latency_ms": 45.2, "details": {"model": "gemini-1.5-flash"}},
+                        {
+                            "name": "chromadb",
+                            "status": "healthy",
+                            "latency_ms": 12.5,
+                            "details": {"version": "0.4.22"},
+                        },
+                        {
+                            "name": "gemini_api",
+                            "status": "healthy",
+                            "latency_ms": 45.2,
+                            "details": {"model": "gemini-1.5-flash"},
+                        },
                     ],
                 },
                 {
@@ -100,7 +136,12 @@ class HealthCheckResponse(BaseModel):
                     "version": "1.0.0",
                     "dependencies": [
                         {"name": "chromadb", "status": "healthy", "latency_ms": 8.1},
-                        {"name": "gemini_api", "status": "degraded", "latency_ms": 2100.0, "details": {"error": "high_latency"}},
+                        {
+                            "name": "gemini_api",
+                            "status": "degraded",
+                            "latency_ms": 2100.0,
+                            "details": {"error": "high_latency"},
+                        },
                     ],
                 },
             ]
@@ -119,9 +160,11 @@ class LivenessResponse(BaseModel):
         timestamp: UTC timestamp.
     """
 
-    status: str = Field(default="alive", description="Liveness status.", examples=["alive"])
+    status: str = Field(
+        default="alive", description="Liveness status.", examples=["alive"]
+    )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp.",
         examples=["2024-01-15T10:30:45.123Z"],
     )
@@ -151,26 +194,36 @@ class ReadinessResponse(BaseModel):
         checks: Optional list of critical dependency checks.
     """
 
-    status: ReadinessStatus = Field(..., description="Readiness status.", examples=["ready"])
+    status: ReadinessStatus = Field(
+        ..., description="Readiness status.", examples=["ready"]
+    )
 
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp.",
         examples=["2024-01-15T10:30:45.123Z"],
     )
-    checks: Optional[list[DependencyHealth]] = Field(
+    checks: list[DependencyHealth] | None = Field(
         default=None, description="Critical dependency checks.", examples=[[]]
     )
 
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {"status": "ready", "timestamp": "2024-01-15T10:30:45.123Z", "checks": []},
+                {
+                    "status": "ready",
+                    "timestamp": "2024-01-15T10:30:45.123Z",
+                    "checks": [],
+                },
                 {
                     "status": "not_ready",
                     "timestamp": "2024-01-15T10:30:45.123Z",
                     "checks": [
-                        {"name": "chromadb", "status": "unhealthy", "details": {"error": "connection_refused"}}
+                        {
+                            "name": "chromadb",
+                            "status": "unhealthy",
+                            "details": {"error": "connection_refused"},
+                        }
                     ],
                 },
             ]

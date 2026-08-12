@@ -10,8 +10,6 @@ Verifies:
 """
 
 import pytest
-from unittest.mock import MagicMock
-
 from pydantic import ValidationError
 
 from app.core.exceptions import (
@@ -36,7 +34,7 @@ class TestChat:
     ):
         result = chat_service.chat(chat_request)
         mock_orchestrator.chat.assert_called_once_with(
-            session_id="", query="How do I reset my password?"
+            session_id=None, query="How do I reset my password?"
         )
         assert isinstance(result, ChatResponse)
 
@@ -85,7 +83,9 @@ class TestNewChat:
         mock_orchestrator.create_session.assert_called_once()
         assert isinstance(result, str)
 
-    def test_memory_error_propagates(self, chat_service: ChatService, mock_orchestrator):
+    def test_memory_error_propagates(
+        self, chat_service: ChatService, mock_orchestrator
+    ):
         mock_orchestrator.create_session.side_effect = MemoryException(message="fail")
         with pytest.raises(MemoryException):
             chat_service.new_chat()

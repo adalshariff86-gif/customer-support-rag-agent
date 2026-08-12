@@ -10,6 +10,11 @@ from app.models.chat import (
     ChatResponse,
     SourceDocument,
 )
+from app.models.error import (
+    ErrorResponse,
+    ValidationErrorDetail,
+    ValidationErrorResponse,
+)
 from app.models.health import (
     DependencyHealth,
     DependencyStatus,
@@ -18,17 +23,12 @@ from app.models.health import (
     ReadinessResponse,
     ReadinessStatus,
 )
-from app.models.error import (
-    ErrorResponse,
-    ValidationErrorResponse,
-    ValidationErrorDetail,
-)
 from app.models.session import (
     SessionCreateRequest,
     SessionCreateResponse,
+    SessionDeleteResponse,
     SessionHistoryItem,
     SessionHistoryResponse,
-    SessionDeleteResponse,
 )
 
 __all__ = [

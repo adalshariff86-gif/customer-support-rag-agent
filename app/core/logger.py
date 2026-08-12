@@ -18,16 +18,15 @@ import json
 import logging
 import sys
 from contextvars import ContextVar
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from app.core.config import settings
 
 # ── Context Variables ─────────────────────────────
 # These are set per-request by middleware/dependencies and
 # automatically included in every log line within that request scope.
-request_id_ctx: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
-session_id_ctx: ContextVar[Optional[str]] = ContextVar("session_id", default=None)
+request_id_ctx: ContextVar[str | None] = ContextVar("request_id", default=None)
+session_id_ctx: ContextVar[str | None] = ContextVar("session_id", default=None)
 
 
 class JSONFormatter(logging.Formatter):
@@ -45,7 +44,7 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_entry: dict = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "module": record.name,
             "message": record.getMessage(),
@@ -57,11 +56,29 @@ class JSONFormatter(logging.Formatter):
         if hasattr(record, "__dict__"):
             for key, value in record.__dict__.items():
                 if key not in (
-                    "name", "msg", "args", "created", "relativeCreated",
-                    "exc_info", "exc_text", "stack_info", "lineno", "funcName",
-                    "pathname", "filename", "module", "levelno", "levelname",
-                    "thread", "threadName", "process", "processName",
-                    "getMessage", "message", "msecs", "taskName",
+                    "name",
+                    "msg",
+                    "args",
+                    "created",
+                    "relativeCreated",
+                    "exc_info",
+                    "exc_text",
+                    "stack_info",
+                    "lineno",
+                    "funcName",
+                    "pathname",
+                    "filename",
+                    "module",
+                    "levelno",
+                    "levelname",
+                    "thread",
+                    "threadName",
+                    "process",
+                    "processName",
+                    "getMessage",
+                    "message",
+                    "msecs",
+                    "taskName",
                 ):
                     log_entry[key] = value
 

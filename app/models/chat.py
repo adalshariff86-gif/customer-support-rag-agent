@@ -5,11 +5,10 @@ Defines the contract between the API layer and the ChatService.
 All fields include validation constraints and OpenAPI examples.
 """
 
-from datetime import datetime, timezone
-from typing import Literal, Optional
+from datetime import UTC, datetime
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, StringConstraints
-from typing_extensions import Annotated
 
 
 class ChatRequest(BaseModel):
@@ -21,9 +20,15 @@ class ChatRequest(BaseModel):
         context_override: Optional flag to bypass RAG retrieval for testing.
     """
 
-    session_id: Optional[
-        Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")]
-    ] = Field(
+    session_id: (
+        Annotated[
+            str,
+            StringConstraints(
+                pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            ),
+        ]
+        | None
+    ) = Field(
         default=None,
         description="Existing session UUID. Omit to create a new session.",
         examples=["550e8400-e29b-41d4-a716-446655440000"],
@@ -67,11 +72,15 @@ class SourceDocument(BaseModel):
     """
 
     id: str = Field(..., description="Document UUID.", examples=["doc_abc123"])
-    content: str = Field(..., description="Retrieved text snippet.", examples=["To reset your password, visit..."])
+    content: str = Field(
+        ...,
+        description="Retrieved text snippet.",
+        examples=["To reset your password, visit..."],
+    )
     score: Annotated[float, Field(ge=0.0, le=1.0)] = Field(
         ..., description="Vector similarity score.", examples=[0.87]
     )
-    metadata: dict[str, str] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Arbitrary key-value pairs from the source document.",
         examples=[{"source": "faq.md", "section": "account"}],
@@ -104,21 +113,27 @@ class ChatResponse(BaseModel):
     """
 
     session_id: str = Field(
-        ..., description="Conversation session UUID.", examples=["550e8400-e29b-41d4-a716-446655440000"]
+        ...,
+        description="Conversation session UUID.",
+        examples=["550e8400-e29b-41d4-a716-446655440000"],
     )
     answer: str = Field(
-        ..., description="Assistant's generated response.", examples=["To reset your password..."]
+        ...,
+        description="Assistant's generated response.",
+        examples=["To reset your password..."],
     )
     sources: list[SourceDocument] = Field(
         default_factory=list,
         description="Retrieved context documents. Empty when context_override=true.",
     )
-    model: str = Field(..., description="LLM model identifier.", examples=["gemini-1.5-flash"])
+    model: str = Field(
+        ..., description="LLM model identifier.", examples=["gemini-1.5-flash"]
+    )
     latency_ms: Annotated[int, Field(ge=0)] = Field(
         ..., description="End-to-end latency in milliseconds.", examples=[245]
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp of response generation.",
         examples=["2024-01-15T10:30:45.123Z"],
     )
@@ -157,14 +172,25 @@ class ChatFeedback(BaseModel):
     """
 
     session_id: Annotated[
-        str, StringConstraints(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-    ] = Field(..., description="Conversation session UUID.", examples=["550e8400-e29b-41d4-a716-446655440000"])
-    message_id: str = Field(..., description="Message UUID (future use).", examples=["msg_xyz789"])
+        str,
+        StringConstraints(
+            pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        ),
+    ] = Field(
+        ...,
+        description="Conversation session UUID.",
+        examples=["550e8400-e29b-41d4-a716-446655440000"],
+    )
+    message_id: str = Field(
+        ..., description="Message UUID (future use).", examples=["msg_xyz789"]
+    )
     rating: Literal["helpful", "not_helpful"] = Field(
         ..., description="Binary helpfulness rating.", examples=["helpful"]
     )
-    comment: Optional[Annotated[str, StringConstraints(max_length=1000)]] = Field(
-        default=None, description="Optional free-text feedback.", examples=["Answer was accurate but could be more concise."]
+    comment: Annotated[str, StringConstraints(max_length=1000)] | None = Field(
+        default=None,
+        description="Optional free-text feedback.",
+        examples=["Answer was accurate but could be more concise."],
     )
 
     model_config = {

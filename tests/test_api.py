@@ -7,12 +7,13 @@ Verifies:
 - GET /chat/health success
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.core.exceptions import (
     ChatException,
     LLMException,
@@ -39,13 +40,13 @@ def mock_chat_service():
         ],
         model="test-model",
         latency_ms=150,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
     svc.new_chat.return_value = "550e8400-e29b-41d4-a716-446655440000"
     svc.health_check.return_value = {
         "status": "healthy",
         "service": "chat",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "version": "1.0.0",
     }
     return svc
@@ -54,8 +55,8 @@ def mock_chat_service():
 @pytest.fixture()
 def client(mock_chat_service):
     """FastAPI TestClient with mocked ChatService dependency and mocked lifespan."""
-    from app.main import app
     from app.core.dependencies import get_chat_service
+    from app.main import app
 
     app.dependency_overrides[get_chat_service] = lambda: mock_chat_service
     # Mock lifecycle so startup/shutdown are no-ops (avoids chromadb import)
@@ -64,13 +65,15 @@ def client(mock_chat_service):
         mock_lc.shutdown = AsyncMock()
         mock_lc.health_check.return_value = {
             "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "environment": "test",
             "version": "1.0.0",
             "uptime_seconds": 0.0,
             "dependencies": [],
         }
-        with TestClient(app, raise_server_exceptions=False) as c:
+        with TestClient(
+            app, raise_server_exceptions=False, headers={"X-API-Key": settings.API_KEY}
+        ) as c:
             yield c
     app.dependency_overrides.clear()
 
@@ -167,3 +170,65 @@ class TestHealthEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
+
+
+class TestAPIKeyAuthentication:
+    """Tests 7-8: API-key authentication behavior."""
+
+    def test_missing_api_key_returns_401(self):
+        """Test 7: Without a valid API key, request returns 401."""
+        from app.core.dependencies import get_chat_service
+        from app.main import app
+
+        with patch("app.main._lifecycle") as mock_lc:
+            mock_lc.startup = AsyncMock()
+            mock_lc.shutdown = AsyncMock()
+            mock_lc.health_check.return_value = {
+                "status": "healthy",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "environment": "test",
+                "version": "1.0.0",
+                "uptime_seconds": 0.0,
+                "dependencies": [],
+            }
+            with TestClient(app, raise_server_exceptions=False) as c:
+                # No API key header
+                response = c.post(
+                    "/chat",
+                    json={"message": "test"},
+                )
+                assert response.status_code == 401
+                data = response.json()
+                assert data["status"] == 401
+
+    def test_invalid_api_key_returns_401(self):
+        """Test 7: With an invalid API key, request returns 401."""
+        from app.core.dependencies import get_chat_service
+        from app.main import app
+
+        with patch("app.main._lifecycle") as mock_lc:
+            mock_lc.startup = AsyncMock()
+            mock_lc.shutdown = AsyncMock()
+            mock_lc.health_check.return_value = {
+                "status": "healthy",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "environment": "test",
+                "version": "1.0.0",
+                "uptime_seconds": 0.0,
+                "dependencies": [],
+            }
+            with TestClient(app, raise_server_exceptions=False) as c:
+                response = c.post(
+                    "/chat",
+                    json={"message": "test"},
+                    headers={"X-API-Key": "invalid-key-12345"},
+                )
+                assert response.status_code == 401
+
+    def test_valid_api_key_succeeds(self, client, mock_chat_service):
+        """Test 8: With a valid API key, request succeeds."""
+        response = client.post(
+            "/chat",
+            json={"message": "test"},
+        )
+        assert response.status_code == 200

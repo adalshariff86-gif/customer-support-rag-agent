@@ -1,260 +1,362 @@
 """
-Chat API Router – HTTP layer for the customer support RAG agent.
+Chat API routes for the customer support RAG agent.
 
-Endpoints:
-  POST /chat        – Send a message and receive an AI-generated answer.
-  POST /chat/new    – Create a new conversation session.
-  GET  /chat/health – Lightweight chat service health check.
+Responsibilities:
+- Accept HTTP requests.
+- Validate request schemas through Pydantic.
+- Delegate business operations to ChatService.
+- Convert business exceptions into HTTP responses.
 
-Design principles:
-  - Thin API layer: validates HTTP requests, calls ChatService, returns responses.
-  - No business logic, no retrieval, no embeddings, no memory, no prompt engineering.
-  - All domain exceptions (AppException subclasses) are mapped to HTTP responses
-    by the global exception handler registered in main.py.
+This module contains NO:
+- RAG logic
+- Retrieval logic
+- Vector search
+- Embedding generation
+- Prompt engineering
+- Memory implementation
+- LLM implementation
 """
 
-import time
-from datetime import datetime, timezone
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.config import settings
-from app.core.dependencies import get_chat_service
+from app.core.exceptions import (
+    ChatException,
+    LLMException,
+    MemoryException,
+    RAGException,
+    RetrievalException,
+    ValidationException,
+)
 from app.core.logger import get_logger
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.chat_service import ChatService
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(
+    prefix="/chat",
+    tags=["Chat"],
+)
 
 
-# ── Response Models ────────────────────────────────
-class NewChatResponse(BaseModel):
-    """Response payload for session creation.
+# ----------------------------------------------------------------------
+# Dependency Injection
+# ----------------------------------------------------------------------
 
-    Attributes:
-        session_id: Newly created session UUID.
-        created: Always true on success.
-    """
-
-    session_id: str = Field(
-        ...,
-        description="Newly created session UUID.",
-        examples=["550e8400-e29b-41d4-a716-446655440000"],
-    )
-    created: bool = Field(
-        default=True,
-        description="Indicates successful session creation.",
-        examples=[True],
-    )
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "session_id": "550e8400-e29b-41d4-a716-446655440000",
-                    "created": True,
-                }
-            ]
-        }
-    }
+from app.core.dependencies import get_chat_service
 
 
-class ChatHealthResponse(BaseModel):
-    """Health check response for the chat service.
+# ----------------------------------------------------------------------
+# POST /chat
+# ----------------------------------------------------------------------
 
-    Attributes:
-        status: Service health status.
-        service: Service identifier.
-        timestamp: UTC ISO 8601 timestamp.
-        version: Service version string.
-    """
-
-    status: str = Field(
-        default="healthy",
-        description="Service health status.",
-        examples=["healthy"],
-    )
-    service: str = Field(
-        default="chat",
-        description="Service identifier.",
-        examples=["chat"],
-    )
-    timestamp: str = Field(
-        ...,
-        description="UTC ISO 8601 timestamp.",
-        examples=["2024-01-15T10:30:45.123456+00:00"],
-    )
-    version: str = Field(
-        ...,
-        description="Service version string.",
-        examples=["1.0.0"],
-    )
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "status": "healthy",
-                    "service": "chat",
-                    "timestamp": "2024-01-15T10:30:45.123456+00:00",
-                    "version": "1.0.0",
-                }
-            ]
-        }
-    }
-
-
-# ── POST /chat ────────────────────────────────────
 @router.post(
     "",
     response_model=ChatResponse,
     status_code=status.HTTP_200_OK,
-    summary="Send a chat message",
-    description=(
-        "Send a user message through the RAG pipeline and receive an "
-        "AI-generated response grounded in the knowledge base.  If no "
-        "session_id is provided, a new session is created automatically."
-    ),
-    responses={
-        200: {
-            "description": "Successful chat response with answer and source documents.",
-        },
-        422: {"description": "Validation error (empty message, invalid session_id)."},
-        502: {"description": "Upstream LLM provider failure."},
-        500: {"description": "Internal server error."},
-    },
 )
-async def chat(
+def chat(
     request: ChatRequest,
-    chat_service: ChatService = Depends(get_chat_service),
+    service: ChatService = Depends(get_chat_service),
 ) -> ChatResponse:
-    """Process a chat message through the RAG pipeline.
-
-    Delegates entirely to ChatService.chat().  No business logic is
-    executed in this handler.
     """
-    start_time = time.perf_counter()
+    Send a message to the customer support assistant.
 
-    logger.info(
-        "Request received",
-        extra={
-            "endpoint": "POST /chat",
-            "query_length": len(request.message),
-            "session_id": request.session_id or "new",
-        },
-    )
+    Session behaviour:
+    - If session_id is omitted or empty, a new session is created.
+    - If session_id is supplied and exists, the conversation continues.
+    - If session_id is supplied but does not exist, a 404 is returned.
+    """
 
-    response = chat_service.chat(request)
+    try:
+        logger.info(
+            "POST /chat request received",
+            extra={
+                "session_id": request.session_id or "new",
+                "message_length": len(request.message),
+            },
+        )
 
-    elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
-    logger.info(
-        "Request completed",
-        extra={
-            "endpoint": "POST /chat",
-            "status_code": 200,
-            "elapsed_ms": elapsed_ms,
-            "session_id": response.session_id,
-            "query_length": len(request.message),
-        },
-    )
+        response = service.chat(request)
 
-    return response
+        logger.info(
+            "POST /chat request completed",
+            extra={
+                "session_id": response.session_id,
+            },
+        )
+
+        return response
+
+    except ValidationException as exc:
+        logger.warning(
+            "Chat request validation failed",
+            extra={"error": str(exc)},
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=_exception_detail(exc),
+        ) from exc
+
+    except MemoryException as exc:
+        logger.warning(
+            "Chat memory error",
+            extra={"error": str(exc)},
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=_exception_detail(exc),
+        ) from exc
+
+    except RetrievalException as exc:
+        logger.error(
+            "Chat retrieval error",
+            extra={"error": str(exc)},
+            exc_info=True,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=_exception_detail(exc),
+        ) from exc
+
+    except LLMException as exc:
+        logger.error(
+            "Chat LLM error",
+            extra={"error": str(exc)},
+            exc_info=True,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_exception_detail(exc),
+        ) from exc
+
+    except RAGException as exc:
+        logger.error(
+            "Chat RAG error",
+            extra={"error": str(exc)},
+            exc_info=True,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_exception_detail(exc),
+        ) from exc
+
+    except ChatException as exc:
+        logger.error(
+            "Chat service error",
+            extra={"error": str(exc)},
+            exc_info=True,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_exception_detail(exc),
+        ) from exc
 
 
-# ── POST /chat/new ────────────────────────────────
+# ----------------------------------------------------------------------
+# POST /chat/new
+# ----------------------------------------------------------------------
+
 @router.post(
     "/new",
-    response_model=NewChatResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new chat session",
-    description=(
-        "Create a new conversation session and return its UUID.  "
-        "Use the returned session_id in subsequent /chat requests."
-    ),
-    responses={
-        201: {
-            "description": "Session created successfully.",
-        },
-        500: {"description": "Internal server error."},
-    },
 )
-async def new_chat(
-    chat_service: ChatService = Depends(get_chat_service),
-) -> NewChatResponse:
-    """Create a new conversation session.
-
-    Delegates entirely to ChatService.new_chat().  No business logic is
-    executed in this handler.
+def new_chat(
+    service: ChatService = Depends(get_chat_service),
+) -> dict:
     """
-    start_time = time.perf_counter()
+    Explicitly create a new chat session.
+    """
 
-    logger.info(
-        "Request received",
-        extra={"endpoint": "POST /chat/new"},
-    )
+    try:
+        logger.info("POST /chat/new request received")
 
-    session_id = chat_service.new_chat()
+        session_id = service.new_chat()
 
-    elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
-    logger.info(
-        "Request completed",
-        extra={
-            "endpoint": "POST /chat/new",
-            "status_code": 201,
-            "elapsed_ms": elapsed_ms,
+        logger.info(
+            "New chat session created",
+            extra={"session_id": session_id},
+        )
+
+        return {
             "session_id": session_id,
-        },
-    )
+            "created": True,
+        }
 
-    return NewChatResponse(session_id=session_id, created=True)
+    except MemoryException as exc:
+        logger.error(
+            "Failed to create new chat session",
+            extra={"error": str(exc)},
+            exc_info=True,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_exception_detail(exc),
+        ) from exc
+
+    except ChatException as exc:
+        logger.error(
+            "Chat service failed to create session",
+            extra={"error": str(exc)},
+            exc_info=True,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_exception_detail(exc),
+        ) from exc
 
 
-# ── GET /chat/health ──────────────────────────────
+# ----------------------------------------------------------------------
+# GET /chat/history/{session_id}
+# ----------------------------------------------------------------------
+
+@router.get(
+    "/history/{session_id}",
+    status_code=status.HTTP_200_OK,
+)
+def get_chat_history(
+    session_id: str,
+    service: ChatService = Depends(get_chat_service),
+) -> dict:
+    """
+    Return all messages belonging to a conversation session.
+
+    The session must exist in the current MemoryService instance.
+    """
+
+    try:
+        logger.info(
+            "GET /chat/history request received",
+            extra={"session_id": session_id},
+        )
+
+        messages = service.get_history(session_id)
+
+        return {
+            "session_id": session_id,
+            "message_count": len(messages),
+            "messages": [
+                {
+                    "role": message.role,
+                    "content": message.content,
+                    "timestamp": message.timestamp.isoformat(),
+                    "sources": message.sources,
+                }
+                for message in messages
+            ],
+        }
+
+    except ValidationException as exc:
+        logger.warning(
+            "Invalid history request",
+            extra={
+                "session_id": session_id,
+                "error": str(exc),
+            },
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=_exception_detail(exc),
+        ) from exc
+
+    except MemoryException as exc:
+        logger.warning(
+            "History session not found",
+            extra={
+                "session_id": session_id,
+                "error": str(exc),
+            },
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=_exception_detail(exc),
+        ) from exc
+
+    except ChatException as exc:
+        logger.error(
+            "Failed to retrieve chat history",
+            extra={
+                "session_id": session_id,
+                "error": str(exc),
+            },
+            exc_info=True,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_exception_detail(exc),
+        ) from exc
+
+
+# ----------------------------------------------------------------------
+# GET /chat/health
+# ----------------------------------------------------------------------
+
 @router.get(
     "/health",
-    response_model=ChatHealthResponse,
     status_code=status.HTTP_200_OK,
-    summary="Chat service health check",
-    description=(
-        "Lightweight health check for the chat service.  "
-        "Returns service status, version, and UTC timestamp."
-    ),
-    responses={
-        200: {
-            "description": "Service is healthy.",
-        },
-    },
 )
-async def health_check(
-    chat_service: ChatService = Depends(get_chat_service),
-) -> ChatHealthResponse:
-    """Return chat service health status.
-
-    Delegates entirely to ChatService.health_check().  No external API
-    calls or database writes are performed.
+def chat_health(
+    service: ChatService = Depends(get_chat_service),
+) -> dict:
     """
-    start_time = time.perf_counter()
+    Return the health status of the ChatService.
+    """
 
-    health = chat_service.health_check()
+    try:
+        return service.health_check()
 
-    elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
-    logger.info(
-        "Request completed",
-        extra={
-            "endpoint": "GET /chat/health",
-            "status_code": 200,
-            "elapsed_ms": elapsed_ms,
-        },
-    )
+    except Exception as exc:
+        logger.error(
+            "Chat health check failed",
+            extra={"error": str(exc)},
+            exc_info=True,
+        )
 
-    return ChatHealthResponse(
-        status=health.get("status", "healthy"),
-        service=health.get("service", "chat"),
-        timestamp=health.get(
-            "timestamp", datetime.now(timezone.utc).isoformat()
-        ),
-        version=health.get("version", settings.APP_VERSION),
-    )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "message": "Chat service health check failed.",
+                "error": str(exc),
+            },
+        ) from exc
+
+
+# ----------------------------------------------------------------------
+# Exception helper
+# ----------------------------------------------------------------------
+
+def _exception_detail(exc: Exception) -> dict:
+    """
+    Convert application exceptions into a consistent HTTP detail object.
+
+    Supports the custom exception structure used by this project while
+    remaining safe if an exception does not expose all attributes.
+    """
+
+    detail: dict = {
+        "message": str(exc),
+    }
+
+    message = getattr(exc, "message", None)
+    details = getattr(exc, "details", None)
+
+    if message:
+        detail["message"] = message
+
+    if details:
+        detail["details"] = details
+
+    return detail

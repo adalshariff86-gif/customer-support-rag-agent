@@ -27,3 +27,10 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Local ChromaDB / runtime data
+chroma_db/
+data/
+
+# Local/debug scripts
+test_*.py

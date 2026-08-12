@@ -12,7 +12,7 @@ from app.vectorstore.base import RetrievedChunk, VectorStore
 from app.vectorstore.chroma_store import ChromaVectorStore
 
 __all__: list[str] = [
-    "VectorStore",
     "ChromaVectorStore",
     "RetrievedChunk",
+    "VectorStore",
 ]

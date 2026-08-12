@@ -4,11 +4,10 @@ Session Models – Pydantic schemas for session lifecycle management.
 Defines request/response contracts for session creation, retrieval, and history.
 """
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
-from typing_extensions import Annotated
 
 
 class SessionCreateRequest(BaseModel):
@@ -19,8 +18,12 @@ class SessionCreateRequest(BaseModel):
         context_override: If true, skip RAG retrieval for the first message.
     """
 
-    initial_message: Optional[Annotated[str, StringConstraints(min_length=1, max_length=4000)]] = Field(
-        default=None, description="Optional initial user message.", examples=["Hello, I need help with my account."]
+    initial_message: (
+        Annotated[str, StringConstraints(min_length=1, max_length=4000)] | None
+    ) = Field(
+        default=None,
+        description="Optional initial user message.",
+        examples=["Hello, I need help with my account."],
     )
     context_override: bool = Field(
         default=False,
@@ -31,7 +34,10 @@ class SessionCreateRequest(BaseModel):
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {"initial_message": "Hello, I need help with my account.", "context_override": False},
+                {
+                    "initial_message": "Hello, I need help with my account.",
+                    "context_override": False,
+                },
                 {"context_override": True},
             ]
         }
@@ -47,10 +53,17 @@ class SessionCreateResponse(BaseModel):
     """
 
     session_id: Annotated[
-        str, StringConstraints(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-    ] = Field(..., description="New session UUID.", examples=["550e8400-e29b-41d4-a716-446655440000"])
+        str,
+        StringConstraints(
+            pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        ),
+    ] = Field(
+        ...,
+        description="New session UUID.",
+        examples=["550e8400-e29b-41d4-a716-446655440000"],
+    )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp of session creation.",
         examples=["2024-01-15T10:30:45.123Z"],
     )
@@ -58,7 +71,10 @@ class SessionCreateResponse(BaseModel):
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {"session_id": "550e8400-e29b-41d4-a716-446655440000", "created_at": "2024-01-15T10:30:45.123Z"}
+                {
+                    "session_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "created_at": "2024-01-15T10:30:45.123Z",
+                }
             ]
         }
     }
@@ -74,10 +90,19 @@ class SessionHistoryItem(BaseModel):
         sources: Sources used for assistant messages (empty for user messages).
     """
 
-    role: str = Field(..., pattern=r"^(user|assistant)$", description="Message role.", examples=["user"])
-    content: str = Field(..., description="Message text.", examples=["How do I reset my password?"])
+    role: str = Field(
+        ...,
+        pattern=r"^(user|assistant)$",
+        description="Message role.",
+        examples=["user"],
+    )
+    content: str = Field(
+        ..., description="Message text.", examples=["How do I reset my password?"]
+    )
     timestamp: datetime = Field(
-        ..., description="UTC timestamp of the message.", examples=["2024-01-15T10:30:45.123Z"]
+        ...,
+        description="UTC timestamp of the message.",
+        examples=["2024-01-15T10:30:45.123Z"],
     )
     sources: list[dict] = Field(
         default_factory=list,
@@ -123,12 +148,31 @@ class SessionHistoryResponse(BaseModel):
     """
 
     session_id: Annotated[
-        str, StringConstraints(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-    ] = Field(..., description="Session UUID.", examples=["550e8400-e29b-41d4-a716-446655440000"])
-    created_at: datetime = Field(..., description="Session creation timestamp.", examples=["2024-01-15T10:30:45.123Z"])
-    updated_at: datetime = Field(..., description="Last activity timestamp.", examples=["2024-01-15T10:35:12.789Z"])
-    message_count: int = Field(..., ge=0, description="Total messages in history.", examples=[4])
-    history: list[SessionHistoryItem] = Field(..., description="Ordered conversation history.")
+        str,
+        StringConstraints(
+            pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        ),
+    ] = Field(
+        ...,
+        description="Session UUID.",
+        examples=["550e8400-e29b-41d4-a716-446655440000"],
+    )
+    created_at: datetime = Field(
+        ...,
+        description="Session creation timestamp.",
+        examples=["2024-01-15T10:30:45.123Z"],
+    )
+    updated_at: datetime = Field(
+        ...,
+        description="Last activity timestamp.",
+        examples=["2024-01-15T10:35:12.789Z"],
+    )
+    message_count: int = Field(
+        ..., ge=0, description="Total messages in history.", examples=[4]
+    )
+    history: list[SessionHistoryItem] = Field(
+        ..., description="Ordered conversation history."
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -154,7 +198,10 @@ class SessionHistoryResponse(BaseModel):
                                     "id": "doc_abc123",
                                     "content": "To reset your password, visit...",
                                     "score": 0.87,
-                                    "metadata": {"source": "faq.md", "section": "account"},
+                                    "metadata": {
+                                        "source": "faq.md",
+                                        "section": "account",
+                                    },
                                 }
                             ],
                         },
@@ -187,14 +234,25 @@ class SessionDeleteResponse(BaseModel):
     """
 
     session_id: Annotated[
-        str, StringConstraints(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-    ] = Field(..., description="Deleted session UUID.", examples=["550e8400-e29b-41d4-a716-446655440000"])
+        str,
+        StringConstraints(
+            pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        ),
+    ] = Field(
+        ...,
+        description="Deleted session UUID.",
+        examples=["550e8400-e29b-41d4-a716-446655440000"],
+    )
     deleted_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp of deletion.",
         examples=["2024-01-15T10:40:00.000Z"],
     )
-    message: str = Field(..., description="Confirmation message.", examples=["Session deleted successfully."])
+    message: str = Field(
+        ...,
+        description="Confirmation message.",
+        examples=["Session deleted successfully."],
+    )
 
     model_config = {
         "json_schema_extra": {

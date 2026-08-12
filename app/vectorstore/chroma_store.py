@@ -79,11 +79,17 @@ class ChromaVectorStore(VectorStore):
             except Exception as exc:
                 logger.error(
                     "Failed to initialise ChromaDB client",
-                    extra={"persist_directory": self.persist_directory, "error": str(exc)},
+                    extra={
+                        "persist_directory": self.persist_directory,
+                        "error": str(exc),
+                    },
                 )
                 raise VectorStoreException(
                     message="Failed to initialise ChromaDB client.",
-                    details={"persist_directory": self.persist_directory, "error": str(exc)},
+                    details={
+                        "persist_directory": self.persist_directory,
+                        "error": str(exc),
+                    },
                 ) from exc
 
         return ChromaVectorStore._client
@@ -120,7 +126,10 @@ class ChromaVectorStore(VectorStore):
         try:
             client = self._get_client()
             client.get_or_create_collection(name=collection_name)
-            logger.info("Collection created / ensured", extra={"collection_name": collection_name})
+            logger.info(
+                "Collection created / ensured",
+                extra={"collection_name": collection_name},
+            )
         except VectorStoreException:
             raise
         except Exception as exc:
@@ -146,9 +155,14 @@ class ChromaVectorStore(VectorStore):
             client = self._get_client()
             try:
                 client.delete_collection(name=collection_name)
-                logger.info("Collection deleted", extra={"collection_name": collection_name})
+                logger.info(
+                    "Collection deleted", extra={"collection_name": collection_name}
+                )
             except Exception as not_found_exc:
-                if "does not exist" in str(not_found_exc).lower() or type(not_found_exc).__name__ == "NotFoundError":
+                if (
+                    "does not exist" in str(not_found_exc).lower()
+                    or type(not_found_exc).__name__ == "NotFoundError"
+                ):
                     logger.info(
                         "Collection already absent — delete is no-op",
                         extra={"collection_name": collection_name},
@@ -182,9 +196,7 @@ class ChromaVectorStore(VectorStore):
         try:
             client = self._get_client()
             collections = client.list_collections()
-            return any(
-                getattr(c, "name", c) == collection_name for c in collections
-            )
+            return any(getattr(c, "name", c) == collection_name for c in collections)
         except VectorStoreException:
             raise
         except Exception as exc:
@@ -236,7 +248,9 @@ class ChromaVectorStore(VectorStore):
                     client.delete_collection(name=name)
                 except Exception:
                     pass
-            logger.info("Vector store reset", extra={"deleted_collections": len(collections)})
+            logger.info(
+                "Vector store reset", extra={"deleted_collections": len(collections)}
+            )
         except VectorStoreException:
             raise
         except Exception as exc:
@@ -314,7 +328,10 @@ class ChromaVectorStore(VectorStore):
                 collection.delete(ids=all_ids)
             logger.info(
                 "Collection cleared",
-                extra={"collection_name": collection_name, "removed_count": len(all_ids)},
+                extra={
+                    "collection_name": collection_name,
+                    "removed_count": len(all_ids),
+                },
             )
         except VectorStoreException:
             raise
@@ -378,7 +395,9 @@ class ChromaVectorStore(VectorStore):
                     ids=ids[offset:end],
                     documents=texts[offset:end],
                     embeddings=embeddings[offset:end],
-                    metadatas=[self._flatten_metadata(m) for m in metadatas[offset:end]],
+                    metadatas=[
+                        self._flatten_metadata(m) for m in metadatas[offset:end]
+                    ],
                 )
 
             elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
@@ -488,7 +507,9 @@ class ChromaVectorStore(VectorStore):
                     ids=ids[offset:end],
                     documents=texts[offset:end],
                     embeddings=embeddings[offset:end],
-                    metadatas=[self._flatten_metadata(m) for m in metadatas[offset:end]],
+                    metadatas=[
+                        self._flatten_metadata(m) for m in metadatas[offset:end]
+                    ],
                 )
 
             elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
@@ -600,7 +621,12 @@ class ChromaVectorStore(VectorStore):
                 details={"field": "ids"},
             )
 
-        lengths = {"ids": len(ids), "texts": len(texts), "embeddings": len(embeddings), "metadatas": len(metadatas)}
+        lengths = {
+            "ids": len(ids),
+            "texts": len(texts),
+            "embeddings": len(embeddings),
+            "metadatas": len(metadatas),
+        }
         unique_lengths = set(lengths.values())
         if len(unique_lengths) != 1:
             raise ValidationException(

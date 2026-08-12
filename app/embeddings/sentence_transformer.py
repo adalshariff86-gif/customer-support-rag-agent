@@ -77,9 +77,7 @@ class SentenceTransformerEmbeddingProvider(EmbeddingProvider):
                 SentenceTransformerEmbeddingProvider._model = SentenceTransformer(
                     self.model_name, device=self.device
                 )
-                SentenceTransformerEmbeddingProvider._dimension = (
-                    SentenceTransformerEmbeddingProvider._model.get_sentence_embedding_dimension()
-                )
+                SentenceTransformerEmbeddingProvider._dimension = SentenceTransformerEmbeddingProvider._model.get_sentence_embedding_dimension()
                 logger.info(
                     "Embedding model loaded",
                     extra={
@@ -124,7 +122,9 @@ class SentenceTransformerEmbeddingProvider(EmbeddingProvider):
 
         try:
             model = self._ensure_model
-            logger.info("Embedding started", extra={"type": "query", "text_length": len(text)})
+            logger.info(
+                "Embedding started", extra={"type": "query", "text_length": len(text)}
+            )
             start = time.perf_counter()
 
             vector = model.encode(
@@ -137,7 +137,11 @@ class SentenceTransformerEmbeddingProvider(EmbeddingProvider):
             elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
             logger.info(
                 "Embedding completed",
-                extra={"type": "query", "elapsed_ms": elapsed_ms, "dimension": len(vector[0])},
+                extra={
+                    "type": "query",
+                    "elapsed_ms": elapsed_ms,
+                    "dimension": len(vector[0]),
+                },
             )
             return vector[0].tolist()
         except ValidationException:

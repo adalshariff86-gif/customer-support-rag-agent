@@ -8,21 +8,11 @@ individual test files never need to construct or wire dependencies.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any
-from unittest.mock import MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 import pytest
 
-from app.core.exceptions import (
-    ChatException,
-    LLMException,
-    MemoryException,
-    RAGException,
-    RetrievalException,
-    ValidationException,
-    VectorStoreException,
-)
 from app.models.chat import ChatRequest, ChatResponse, SourceDocument
 from app.services.memory_service import MemoryService
 from app.services.retrieval_service import RetrievedContext, RetrievedDocument
@@ -36,10 +26,11 @@ def _uuid() -> str:
 # ── Mock Factories ────────────────────────────────
 @pytest.fixture()
 def mock_llm_provider() -> MagicMock:
-    """Mock LLMProvider with a controllable generate() response."""
+    """Mock LLMProvider with a controllable generate() and generate_messages() response."""
     llm = MagicMock()
     llm.model_name = "test-model"
     llm.generate.return_value = "Test LLM response"
+    llm.generate_messages.return_value = "Test LLM response"
     return llm
 
 
@@ -112,7 +103,7 @@ def mock_orchestrator() -> MagicMock:
         sources=[],
         model="test-model",
         latency_ms=100,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
     return orch
 
@@ -167,5 +158,5 @@ def sample_chat_response() -> ChatResponse:
         ],
         model="test-model",
         latency_ms=250,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )

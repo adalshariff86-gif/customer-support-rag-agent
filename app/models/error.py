@@ -5,8 +5,6 @@ All error responses follow RFC 7807 Problem Details format.
 Used by global exception handlers in main.py.
 """
 
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -25,16 +23,28 @@ class ErrorResponse(BaseModel):
     type: str = Field(
         ..., description="Problem type URI.", examples=["errors/validation_error"]
     )
-    title: str = Field(..., description="Short problem summary.", examples=["Validation Error"])
-    status: int = Field(..., ge=100, le=599, description="HTTP status code.", examples=[422])
-    detail: str = Field(..., description="Human-readable error detail.", examples=["Request validation failed."])
-    instance: Optional[str] = Field(
-        default=None, description="Request path where error occurred.", examples=["/api/v1/chat"]
+    title: str = Field(
+        ..., description="Short problem summary.", examples=["Validation Error"]
     )
-    errors: Optional[dict[str, list[str]]] = Field(
+    status: int = Field(
+        ..., ge=100, le=599, description="HTTP status code.", examples=[422]
+    )
+    detail: str = Field(
+        ...,
+        description="Human-readable error detail.",
+        examples=["Request validation failed."],
+    )
+    instance: str | None = Field(
+        default=None,
+        description="Request path where error occurred.",
+        examples=["/api/v1/chat"],
+    )
+    errors: dict[str, list[str]] | None = Field(
         default=None,
         description="Structured validation errors or additional context.",
-        examples=[{"field_errors": ["message: ensure this value has at least 1 characters"]}],
+        examples=[
+            {"field_errors": ["message: ensure this value has at least 1 characters"]}
+        ],
     )
 
     model_config = {
@@ -46,7 +56,11 @@ class ErrorResponse(BaseModel):
                     "status": 422,
                     "detail": "Request validation failed.",
                     "instance": "/api/v1/chat",
-                    "errors": {"field_errors": ["message: ensure this value has at least 1 characters"]},
+                    "errors": {
+                        "field_errors": [
+                            "message: ensure this value has at least 1 characters"
+                        ]
+                    },
                 },
                 {
                     "type": "errors/llm_error",
@@ -72,15 +86,31 @@ class ErrorResponse(BaseModel):
 class ValidationErrorDetail(BaseModel):
     """Structured validation error for a single field."""
 
-    field: str = Field(..., description="Field name that failed validation.", examples=["message"])
-    message: str = Field(..., description="Validation error message.", examples=["ensure this value has at least 1 characters"])
-    value: Optional[str] = Field(default=None, description="Invalid value that was provided.", examples=[""])
+    field: str = Field(
+        ..., description="Field name that failed validation.", examples=["message"]
+    )
+    message: str = Field(
+        ...,
+        description="Validation error message.",
+        examples=["ensure this value has at least 1 characters"],
+    )
+    value: str | None = Field(
+        default=None, description="Invalid value that was provided.", examples=[""]
+    )
 
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {"field": "message", "message": "ensure this value has at least 1 characters", "value": ""},
-                {"field": "session_id", "message": "invalid UUID format", "value": "not-a-uuid"},
+                {
+                    "field": "message",
+                    "message": "ensure this value has at least 1 characters",
+                    "value": "",
+                },
+                {
+                    "field": "session_id",
+                    "message": "invalid UUID format",
+                    "value": "not-a-uuid",
+                },
             ]
         }
     }
@@ -93,7 +123,19 @@ class ValidationErrorResponse(ErrorResponse):
     """
 
     errors: dict[str, list[ValidationErrorDetail]] = Field(
-        ..., description="Field-level validation errors.", examples=[{"field_errors": [{"field": "message", "message": "ensure this value has at least 1 characters", "value": ""}]}]
+        ...,
+        description="Field-level validation errors.",
+        examples=[
+            {
+                "field_errors": [
+                    {
+                        "field": "message",
+                        "message": "ensure this value has at least 1 characters",
+                        "value": "",
+                    }
+                ]
+            }
+        ],
     )
 
     model_config = {
@@ -107,8 +149,16 @@ class ValidationErrorResponse(ErrorResponse):
                     "instance": "/api/v1/chat",
                     "errors": {
                         "field_errors": [
-                            {"field": "message", "message": "ensure this value has at least 1 characters", "value": ""},
-                            {"field": "session_id", "message": "invalid UUID format", "value": "not-a-uuid"},
+                            {
+                                "field": "message",
+                                "message": "ensure this value has at least 1 characters",
+                                "value": "",
+                            },
+                            {
+                                "field": "session_id",
+                                "message": "invalid UUID format",
+                                "value": "not-a-uuid",
+                            },
                         ]
                     },
                 }

@@ -12,8 +12,9 @@ Verifies:
 """
 
 import asyncio
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
 
 from app.core.exceptions import StartupException, ValidationException
 from app.lifecycle import ApplicationLifecycle
@@ -32,18 +33,22 @@ class TestStartupIdempotency:
     @pytest.mark.asyncio
     async def test_startup_sets_flag(self):
         lc = ApplicationLifecycle()
-        with patch.object(lc, "_validate_configuration"), \
-             patch.object(lc, "_ensure_directories"), \
-             patch.object(lc, "_verify_dependencies"):
+        with (
+            patch.object(lc, "_validate_configuration"),
+            patch.object(lc, "_ensure_directories"),
+            patch.object(lc, "_verify_dependencies"),
+        ):
             await lc.startup()
             assert lc._startup_ok is True
 
     @pytest.mark.asyncio
     async def test_startup_records_timestamp(self):
         lc = ApplicationLifecycle()
-        with patch.object(lc, "_validate_configuration"), \
-             patch.object(lc, "_ensure_directories"), \
-             patch.object(lc, "_verify_dependencies"):
+        with (
+            patch.object(lc, "_validate_configuration"),
+            patch.object(lc, "_ensure_directories"),
+            patch.object(lc, "_verify_dependencies"),
+        ):
             await lc.startup()
             assert lc._started_at is not None
 
@@ -74,9 +79,11 @@ class TestAsyncioLock:
     @pytest.mark.asyncio
     async def test_concurrent_startup_only_runs_once(self):
         lc = ApplicationLifecycle()
-        with patch.object(lc, "_validate_configuration"), \
-             patch.object(lc, "_ensure_directories"), \
-             patch.object(lc, "_verify_dependencies"):
+        with (
+            patch.object(lc, "_validate_configuration"),
+            patch.object(lc, "_ensure_directories"),
+            patch.object(lc, "_verify_dependencies"),
+        ):
             # Run startup twice concurrently
             await asyncio.gather(
                 lc.startup(),
@@ -152,16 +159,23 @@ class TestVerifyDependencies:
     def test_all_dependencies_checked(self):
         lc = ApplicationLifecycle()
         checks = [
-            "vector_store", "embedding_provider", "llm_provider",
-            "retrieval_service", "memory_service", "rag_orchestrator", "chat_service",
+            "vector_store",
+            "embedding_provider",
+            "llm_provider",
+            "retrieval_service",
+            "memory_service",
+            "rag_orchestrator",
+            "chat_service",
         ]
-        with patch.object(lc, "_verify_vector_store"), \
-             patch.object(lc, "_verify_embedding_provider"), \
-             patch.object(lc, "_verify_llm_provider"), \
-             patch.object(lc, "_verify_retrieval_service"), \
-             patch.object(lc, "_verify_memory_service"), \
-             patch.object(lc, "_verify_rag_orchestrator"), \
-             patch.object(lc, "_verify_chat_service"):
+        with (
+            patch.object(lc, "_verify_vector_store"),
+            patch.object(lc, "_verify_embedding_provider"),
+            patch.object(lc, "_verify_llm_provider"),
+            patch.object(lc, "_verify_retrieval_service"),
+            patch.object(lc, "_verify_memory_service"),
+            patch.object(lc, "_verify_rag_orchestrator"),
+            patch.object(lc, "_verify_chat_service"),
+        ):
             lc._verify_dependencies()  # should not raise
 
     def test_failure_wraps_in_startup_exception(self):

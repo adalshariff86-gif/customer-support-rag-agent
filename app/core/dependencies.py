@@ -19,9 +19,7 @@ Usage in routes:
 import uuid
 from typing import Any
 
-from fastapi import Request
-
-from app.core.logger import request_id_ctx, session_id_ctx, get_logger
+from app.core.logger import get_logger, request_id_ctx, session_id_ctx
 
 logger = get_logger(__name__)
 
@@ -33,6 +31,7 @@ _memory_service: Any = None
 _llm_provider: Any = None
 _rag_orchestrator: Any = None
 _chat_service: Any = None
+_ingestion_service: Any = None
 
 
 # ── Request Context ───────────────────────────────
@@ -149,22 +148,46 @@ def get_memory_service() -> Any:
 
 
 def get_llm_service() -> Any:
-    """Provide the Google Gemini LLM provider (singleton).
+    """Provide the LLM provider (singleton).
+
+    Selects the provider based on the ``LLM_PROVIDER`` setting:
+      - ``"openrouter"`` → ``OpenRouterProvider``
+      - ``"gemini"``     → ``GeminiProvider``
 
     Returns:
-        GeminiProvider instance wired to the configured API key and model.
+        An ``LLMProvider`` instance wired to the configured API key and model.
 
     Note:
         The provider is created once and cached for the lifetime of the
-        application.  The underlying Gemini SDK is initialised lazily
-        on first use.
+        application.  The underlying client is initialised lazily on first use.
     """
     global _llm_provider
     if _llm_provider is None:
-        from app.llm.gemini_provider import GeminiProvider
+        from app.core.config import settings
 
-        _llm_provider = GeminiProvider()
-        logger.info("LLMProvider singleton created")
+        provider_name = settings.LLM_PROVIDER.lower()
+
+        if provider_name == "openrouter":
+            from app.llm.openrouter_provider import OpenRouterProvider
+
+            _llm_provider = OpenRouterProvider()
+            logger.info(
+                "LLMProvider singleton created",
+                extra={"provider": "openrouter"},
+            )
+        elif provider_name == "gemini":
+            from app.llm.gemini_provider import GeminiProvider
+
+            _llm_provider = GeminiProvider()
+            logger.info(
+                "LLMProvider singleton created",
+                extra={"provider": "gemini"},
+            )
+        else:
+            raise ValueError(
+                f"Unknown LLM_PROVIDER: '{provider_name}'. "
+                "Must be 'openrouter' or 'gemini'."
+            )
     return _llm_provider
 
 
@@ -217,6 +240,36 @@ def get_chat_service() -> Any:
     return _chat_service
 
 
+def get_ingestion_service() -> Any:
+    """Provide the IngestionService (singleton).
+
+    Returns:
+        IngestionService instance wired to the existing DocumentLoader,
+        TextChunker, EmbeddingProvider, and VectorStore singletons.
+
+    Note:
+        The service is created once and cached for the lifetime of the
+        application.  It reuses existing singletons for embedding and
+        vector store.
+    """
+    global _ingestion_service
+    if _ingestion_service is None:
+        from app.services.document_loader import DocumentLoader
+        from app.services.ingestion_service import IngestionService
+        from app.services.text_chunker import TextChunker
+
+        embedding_provider = get_embedding_provider()
+        vector_store = get_vector_store()
+        _ingestion_service = IngestionService(
+            document_loader=DocumentLoader(),
+            text_chunker=TextChunker(),
+            embedding_provider=embedding_provider,
+            vector_store=vector_store,
+        )
+        logger.info("IngestionService singleton created")
+    return _ingestion_service
+
+
 # ── Singleton Reset ─────────────────────────────
 def reset_singletons() -> None:
     """Reset all singleton caches to ``None``.
@@ -233,6 +286,7 @@ def reset_singletons() -> None:
     """
     global _embedding_provider, _vector_store, _retrieval_service
     global _memory_service, _llm_provider, _rag_orchestrator, _chat_service
+    global _ingestion_service
 
     _embedding_provider = None
     _vector_store = None
@@ -241,5 +295,6 @@ def reset_singletons() -> None:
     _llm_provider = None
     _rag_orchestrator = None
     _chat_service = None
+    _ingestion_service = None
 
     logger.info("Singleton caches reset")

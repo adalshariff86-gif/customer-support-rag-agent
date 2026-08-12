@@ -10,8 +10,9 @@ Verifies:
 """
 
 import sys
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from app.core.exceptions import EmbeddingException, ValidationException
 from app.embeddings.sentence_transformer import SentenceTransformerEmbeddingProvider
@@ -39,9 +40,7 @@ def _make_mock_model(dimension=384):
     """Create a mock model with configurable behavior."""
     mock_model = MagicMock()
     mock_model.get_sentence_embedding_dimension.return_value = dimension
-    mock_model.encode.return_value = MagicMock(
-        tolist=lambda: [0.1] * dimension
-    )
+    mock_model.encode.return_value = MagicMock(tolist=lambda: [0.1] * dimension)
     return mock_model
 
 
@@ -110,7 +109,10 @@ class TestBatchEmbedding:
         mock_model = MagicMock()
         mock_model.get_sentence_embedding_dimension.return_value = 384
         mock_model.encode.side_effect = [
-            [MagicMock(tolist=lambda: [0.1] * 384), MagicMock(tolist=lambda: [0.2] * 384)],
+            [
+                MagicMock(tolist=lambda: [0.1] * 384),
+                MagicMock(tolist=lambda: [0.2] * 384),
+            ],
             [MagicMock(tolist=lambda: [0.3] * 384)],
         ]
         mock_st_module.SentenceTransformer.return_value = mock_model

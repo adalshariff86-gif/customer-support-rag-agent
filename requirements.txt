@@ -5,12 +5,13 @@ pydantic==2.9.2
 pydantic-settings==2.5.2
 python-dotenv==1.0.1
 
-# AI / LLM (Ticket 2+)
-# google-generativeai==0.8.0
+# AI / LLM
+google-genai==2.16.0
 
 # RAG / Embeddings (Ticket 5)
 sentence-transformers==3.1.0
 chromadb==0.5.5
+PyPDF2==3.0.1
 
 # Testing
 pytest==8.3.3

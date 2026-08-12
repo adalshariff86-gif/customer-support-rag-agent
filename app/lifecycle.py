@@ -29,8 +29,8 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from app.core.config import settings
 from app.core.exceptions import (
@@ -53,7 +53,7 @@ class ApplicationLifecycle:
     """
 
     def __init__(self) -> None:
-        self._started_at: Optional[datetime] = None
+        self._started_at: datetime | None = None
         self._startup_ok: bool = False
         self._shutdown_ok: bool = False
         self._lock: asyncio.Lock = asyncio.Lock()
@@ -106,7 +106,7 @@ class ApplicationLifecycle:
                 self._verify_dependencies()
 
                 elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
-                self._started_at = datetime.now(timezone.utc)
+                self._started_at = datetime.now(UTC)
                 self._startup_ok = True
 
                 logger.info(
@@ -222,12 +222,12 @@ class ApplicationLifecycle:
         uptime_seconds: float | None = None
         if self._started_at:
             uptime_seconds = round(
-                (datetime.now(timezone.utc) - self._started_at).total_seconds(), 2
+                (datetime.now(UTC) - self._started_at).total_seconds(), 2
             )
 
         return {
             "status": overall_status,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "environment": settings.APP_ENV,
             "version": settings.APP_VERSION,
             "uptime_seconds": uptime_seconds,
@@ -340,7 +340,6 @@ class ApplicationLifecycle:
         from app.core.dependencies import get_llm_service
 
         provider = get_llm_service()
-        # Ensure model_name is accessible
         _ = provider.model_name
 
     def _verify_retrieval_service(self) -> None:
@@ -390,14 +389,14 @@ class ApplicationLifecycle:
                 "status": "healthy",
                 "latency_ms": latency_ms,
                 "details": {"persist_directory": settings.CHROMA_PERSIST_DIRECTORY},
-                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "checked_at": datetime.now(UTC).isoformat(),
             }
         except Exception as exc:
             return {
                 "name": "chromadb",
                 "status": "unhealthy",
                 "details": {"error": str(exc)},
-                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "checked_at": datetime.now(UTC).isoformat(),
             }
 
     def _check_embedding_health(self) -> dict[str, Any]:
@@ -417,14 +416,14 @@ class ApplicationLifecycle:
                     "model_name": settings.EMBEDDING_MODEL_NAME,
                     "device": settings.EMBEDDING_DEVICE,
                 },
-                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "checked_at": datetime.now(UTC).isoformat(),
             }
         except Exception as exc:
             return {
                 "name": "embedding_provider",
                 "status": "unhealthy",
                 "details": {"error": str(exc)},
-                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "checked_at": datetime.now(UTC).isoformat(),
             }
 
     def _check_llm_health(self) -> dict[str, Any]:
@@ -445,36 +444,30 @@ class ApplicationLifecycle:
                     "model_name": provider.model_name,
                     "api_key_configured": has_key,
                 },
-                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "checked_at": datetime.now(UTC).isoformat(),
             }
         except Exception as exc:
             return {
                 "name": "llm_provider",
                 "status": "unhealthy",
                 "details": {"error": str(exc)},
-                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "checked_at": datetime.now(UTC).isoformat(),
             }
 
     # ── Private: Shutdown Helpers ──────────────────
 
     def _release_vector_store(self) -> None:
-        """Release ChromaDB client resources if initialised.
+        """Release ChromaDB client reference without deleting data.
 
-        Calls ``reset()`` on the vector store to delete all in-memory
-        collections and release the ``PersistentClient`` reference.
         ChromaDB's ``PersistentClient`` flushes data to disk automatically
-        on close; no explicit flush is required.
+        on close.  We do NOT call ``reset()`` here because that would
+        destroy all persisted collections on every shutdown/restart.
         """
         try:
-            from app.core.dependencies import get_vector_store
-            from app.core.exceptions import VectorStoreException
+            from app.vectorstore.chroma_store import ChromaVectorStore
 
-            store = get_vector_store()
-            try:
-                store.reset()
-            except VectorStoreException:
-                pass
-            logger.info("Vector store resources released")
+            ChromaVectorStore._client = None
+            logger.info("Vector store client reference released")
         except Exception as exc:
             logger.warning(
                 "Failed to release vector store resources",

@@ -12,10 +12,11 @@ Verifies:
 - reset
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from app.core.exceptions import ValidationException, VectorStoreException
+import pytest
+
+from app.core.exceptions import ValidationException
 
 
 @pytest.fixture()
@@ -176,7 +177,9 @@ class TestGetCollectionStats:
 class TestCollectionManagement:
     def test_create_collection(self, vector_store, mock_chroma_client):
         vector_store.create_collection("new_coll")
-        mock_chroma_client.get_or_create_collection.assert_called_once_with(name="new_coll")
+        mock_chroma_client.get_or_create_collection.assert_called_once_with(
+            name="new_coll"
+        )
 
     def test_collection_exists(self, vector_store, mock_chroma_client):
         mock_coll = MagicMock()

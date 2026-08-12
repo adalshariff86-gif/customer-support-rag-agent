@@ -10,17 +10,18 @@ Configures:
 """
 
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import chat_router
+from app.api import chat_router, documents_router
+from app.core.auth import APIKeyAuthMiddleware
 from app.core.config import settings
-from app.core.exceptions import AppException, StartupException
-from app.core.logger import get_logger, request_id_ctx
 from app.core.dependencies import get_request_id
+from app.core.exceptions import AppException, StartupException
+from app.core.logger import get_logger
+from app.core.rate_limit import RateLimitMiddleware
 from app.lifecycle import ApplicationLifecycle
 
 logger = get_logger(__name__)
@@ -73,17 +74,23 @@ app = FastAPI(
 
 
 # ── CORS Middleware ───────────────────────────────
+_cors_origins = [
+    o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(APIKeyAuthMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 
 # ── API Routers ──────────────────────────────────
 app.include_router(chat_router)
+app.include_router(documents_router)
 
 
 # ── Request ID Middleware ─────────────────────────

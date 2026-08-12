@@ -1,0 +1,31 @@
+CUSTOMER SUPPORT RAG - WORKING STATE
+
+Date: 2026-08-08
+
+STATUS:
+- FastAPI: WORKING
+- Swagger: WORKING
+- Health: WORKING
+- ChromaDB: WORKING
+- Embeddings: WORKING
+- Document ingestion: WORKING
+- Gemini: WORKING
+- RAG retrieval: WORKING
+- Sources: WORKING
+- Session creation: WORKING
+- Conversation memory: WORKING
+- Follow-up questions: WORKING
+
+TESTED:
+POST /chat/new -> 201
+POST /chat -> 200
+Follow-up using same session_id -> WORKING
+
+NEXT:
+1. Fix ? encoding
+2. Investigate Gemini latency
+3. Connect/build frontend
+4. Test complete UI conversation
+5. Final cleanup and README
+
+DO NOT rewrite the working backend unnecessarily.

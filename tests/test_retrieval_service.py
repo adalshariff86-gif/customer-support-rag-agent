@@ -11,12 +11,9 @@ Verifies:
 """
 
 import pytest
-from unittest.mock import MagicMock
 
 from app.core.exceptions import RetrievalException, ValidationException
 from app.services.retrieval_service import (
-    RetrievedContext,
-    RetrievedDocument,
     RetrievalService,
 )
 from app.vectorstore.base import RetrievedChunk
@@ -84,48 +81,78 @@ class TestVectorStoreSearch:
 
 
 class TestChunkFiltering:
-    def test_empty_text_filtered(self, retrieval_service: RetrievalService, mock_vector_store):
+    def test_empty_text_filtered(
+        self, retrieval_service: RetrievalService, mock_vector_store
+    ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="c1", text="", metadata={}, score=0.9, distance=0.1),
-            RetrievedChunk(chunk_id="c2", text="valid", metadata={}, score=0.8, distance=0.2),
+            RetrievedChunk(
+                chunk_id="c1", text="", metadata={}, score=0.9, distance=0.1
+            ),
+            RetrievedChunk(
+                chunk_id="c2", text="valid", metadata={}, score=0.8, distance=0.2
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert len(ctx.documents) == 1
         assert ctx.documents[0].id == "c2"
 
-    def test_whitespace_text_filtered(self, retrieval_service: RetrievalService, mock_vector_store):
+    def test_whitespace_text_filtered(
+        self, retrieval_service: RetrievalService, mock_vector_store
+    ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="c1", text="  ", metadata={}, score=0.9, distance=0.1),
+            RetrievedChunk(
+                chunk_id="c1", text="  ", metadata={}, score=0.9, distance=0.1
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert len(ctx.documents) == 0
 
-    def test_duplicate_ids_filtered(self, retrieval_service: RetrievalService, mock_vector_store):
+    def test_duplicate_ids_filtered(
+        self, retrieval_service: RetrievalService, mock_vector_store
+    ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="c1", text="first", metadata={}, score=0.9, distance=0.1),
-            RetrievedChunk(chunk_id="c1", text="duplicate", metadata={}, score=0.8, distance=0.2),
+            RetrievedChunk(
+                chunk_id="c1", text="first", metadata={}, score=0.9, distance=0.1
+            ),
+            RetrievedChunk(
+                chunk_id="c1", text="duplicate", metadata={}, score=0.8, distance=0.2
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert len(ctx.documents) == 1
         assert ctx.documents[0].content == "first"
 
-    def test_empty_metadata_filtered(self, retrieval_service: RetrievalService, mock_vector_store):
+    def test_empty_metadata_filtered(
+        self, retrieval_service: RetrievalService, mock_vector_store
+    ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="c1", text="valid", metadata="not-a-dict", score=0.9, distance=0.1),
+            RetrievedChunk(
+                chunk_id="c1",
+                text="valid",
+                metadata="not-a-dict",
+                score=0.9,
+                distance=0.1,
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert len(ctx.documents) == 0
 
-    def test_empty_chunk_id_filtered(self, retrieval_service: RetrievalService, mock_vector_store):
+    def test_empty_chunk_id_filtered(
+        self, retrieval_service: RetrievalService, mock_vector_store
+    ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="", text="valid", metadata={}, score=0.9, distance=0.1),
+            RetrievedChunk(
+                chunk_id="", text="valid", metadata={}, score=0.9, distance=0.1
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert len(ctx.documents) == 0
 
 
 class TestEmptyResults:
-    def test_no_results_returns_empty_context(self, retrieval_service: RetrievalService, mock_vector_store):
+    def test_no_results_returns_empty_context(
+        self, retrieval_service: RetrievalService, mock_vector_store
+    ):
         mock_vector_store.similarity_search.return_value = []
         ctx = retrieval_service.retrieve(query="test")
         assert ctx.documents == []
@@ -136,7 +163,9 @@ class TestEmptyResults:
         self, retrieval_service: RetrievalService, mock_vector_store
     ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="c1", text="", metadata={}, score=0.9, distance=0.1),
+            RetrievedChunk(
+                chunk_id="c1", text="", metadata={}, score=0.9, distance=0.1
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert ctx.documents == []
@@ -160,10 +189,24 @@ class TestContextFormatting:
         assert "Document: faq.md" in ctx.context
         assert "Password reset guide." in ctx.context
 
-    def test_context_separator(self, retrieval_service: RetrievalService, mock_vector_store):
+    def test_context_separator(
+        self, retrieval_service: RetrievalService, mock_vector_store
+    ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="c1", text="first", metadata={"source": "a.md"}, score=0.9, distance=0.1),
-            RetrievedChunk(chunk_id="c2", text="second", metadata={"source": "b.md"}, score=0.8, distance=0.2),
+            RetrievedChunk(
+                chunk_id="c1",
+                text="first",
+                metadata={"source": "a.md"},
+                score=0.9,
+                distance=0.1,
+            ),
+            RetrievedChunk(
+                chunk_id="c2",
+                text="second",
+                metadata={"source": "b.md"},
+                score=0.8,
+                distance=0.2,
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert "------------------------------------" in ctx.context
@@ -172,15 +215,23 @@ class TestContextFormatting:
         self, retrieval_service: RetrievalService, mock_vector_store
     ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="c1", text="text", metadata={}, score=0.9, distance=0.1),
+            RetrievedChunk(
+                chunk_id="c1", text="text", metadata={}, score=0.9, distance=0.1
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert "Document: c1" in ctx.context
 
-    def test_document_count_property(self, retrieval_service: RetrievalService, mock_vector_store):
+    def test_document_count_property(
+        self, retrieval_service: RetrievalService, mock_vector_store
+    ):
         mock_vector_store.similarity_search.return_value = [
-            RetrievedChunk(chunk_id="c1", text="a", metadata={}, score=0.9, distance=0.1),
-            RetrievedChunk(chunk_id="c2", text="b", metadata={}, score=0.8, distance=0.2),
+            RetrievedChunk(
+                chunk_id="c1", text="a", metadata={}, score=0.9, distance=0.1
+            ),
+            RetrievedChunk(
+                chunk_id="c2", text="b", metadata={}, score=0.8, distance=0.2
+            ),
         ]
         ctx = retrieval_service.retrieve(query="test")
         assert ctx.document_count == 2

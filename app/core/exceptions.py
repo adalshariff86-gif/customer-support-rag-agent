@@ -18,7 +18,7 @@ Usage:
     )
 """
 
-from typing import Any, Optional
+from typing import Any
 
 
 class AppException(Exception):
@@ -37,9 +37,9 @@ class AppException(Exception):
     def __init__(
         self,
         message: str = "An unexpected error occurred.",
-        details: Optional[dict[str, Any]] = None,
-        status_code: Optional[int] = None,
-        error_code: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        status_code: int | None = None,
+        error_code: str | None = None,
     ) -> None:
         self.message = message
         self.details = details or {}
@@ -73,7 +73,7 @@ class ValidationException(AppException):
     def __init__(
         self,
         message: str = "Validation failed.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)
 
@@ -91,7 +91,7 @@ class ConfigurationException(AppException):
     def __init__(
         self,
         message: str = "Application configuration error.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)
 
@@ -110,7 +110,7 @@ class LLMException(AppException):
     def __init__(
         self,
         message: str = "Language model service failed.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         status_code: int = 502,
     ) -> None:
         super().__init__(message=message, details=details, status_code=status_code)
@@ -129,7 +129,7 @@ class VectorStoreException(AppException):
     def __init__(
         self,
         message: str = "Vector store operation failed.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)
 
@@ -148,7 +148,7 @@ class MemoryException(AppException):
     def __init__(
         self,
         message: str = "Memory service error.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         status_code: int = 500,
     ) -> None:
         super().__init__(message=message, details=details, status_code=status_code)
@@ -167,7 +167,7 @@ class DocumentException(AppException):
     def __init__(
         self,
         message: str = "Document processing failed.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)
 
@@ -185,7 +185,7 @@ class EmbeddingException(AppException):
     def __init__(
         self,
         message: str = "Embedding generation failed.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)
 
@@ -203,7 +203,7 @@ class RetrievalException(AppException):
     def __init__(
         self,
         message: str = "Retrieval service error.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)
 
@@ -224,7 +224,7 @@ class ChatException(AppException):
     def __init__(
         self,
         message: str = "Chat service error.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)
 
@@ -245,7 +245,7 @@ class StartupException(AppException):
     def __init__(
         self,
         message: str = "Application startup failed.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)
 
@@ -266,6 +266,6 @@ class RAGException(AppException):
     def __init__(
         self,
         message: str = "RAG pipeline error.",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message=message, details=details)

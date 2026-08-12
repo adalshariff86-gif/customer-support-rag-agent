@@ -16,8 +16,6 @@ Verifies every custom exception class in the hierarchy:
 - RAGException (500)
 """
 
-import pytest
-
 from app.core.exceptions import (
     AppException,
     ChatException,
@@ -214,7 +212,9 @@ class TestExceptionHierarchy:
             RAGException,
         ]
         for cls in classes:
-            assert issubclass(cls, AppException), f"{cls.__name__} must inherit AppException"
+            assert issubclass(cls, AppException), (
+                f"{cls.__name__} must inherit AppException"
+            )
 
     def test_all_inherit_exception(self):
         classes = [
