@@ -119,7 +119,11 @@ class RAGOrchestrator:
                 details={"error": str(exc)},
             ) from exc
 
-    def chat(self, session_id: str | None, query: str) -> ChatResponse:
+    def chat(
+        self,
+        session_id: str | None,
+        query: str,
+    ) -> ChatResponse:
         """
         Process a user message through the complete RAG pipeline.
 
@@ -186,7 +190,7 @@ class RAGOrchestrator:
             )
 
             # ----------------------------------------------------------
-            # 6. Build prompt
+            # 6. Build structured messages
             # ----------------------------------------------------------
 
             messages = self._build_messages(
@@ -342,20 +346,11 @@ class RAGOrchestrator:
         )
 
     def get_session_messages(
-        self, session_id: str
+        self,
+        session_id: str,
     ) -> list:
-        """Retrieve all messages for a given session.
+        """Retrieve all messages for a given session."""
 
-        Args:
-            session_id: The session UUID.
-
-        Returns:
-            List of MemoryMessage instances.
-
-        Raises:
-            ValidationException: If session_id is invalid.
-            MemoryException:     If the session does not exist.
-        """
         try:
             return self._memory_service.get_messages(session_id)
 
@@ -393,7 +388,10 @@ class RAGOrchestrator:
 
         validated_query = query.strip()
 
-        if session_id is not None and not isinstance(session_id, str):
+        if session_id is not None and not isinstance(
+            session_id,
+            str,
+        ):
             raise ValidationException(
                 message="Session ID must be a string when provided.",
                 details={
@@ -440,7 +438,10 @@ class RAGOrchestrator:
                 },
             ) from exc
 
-    def _read_history(self, session_id: str) -> str:
+    def _read_history(
+        self,
+        session_id: str,
+    ) -> str:
         """Read formatted conversation history."""
 
         try:
@@ -522,15 +523,18 @@ class RAGOrchestrator:
         retrieved_context: str,
         query: str,
     ) -> str:
-        """Build the complete LLM prompt as a single string.
+        """
+        Build the complete LLM prompt as a single string.
 
         This method is retained for backward compatibility with providers
-        that only support a single-prompt interface.  The orchestrator
-        uses ``_build_messages()`` when calling ``generate_messages()``.
+        or tests that use a single-prompt interface.
+
+        The structured ``_build_messages()`` method is preferred by the
+        orchestrator when the LLM provider supports ``generate_messages()``.
         """
 
         parts: list[str] = [
-            _SYSTEM_INSTRUCTIONS
+            _SYSTEM_INSTRUCTIONS,
         ]
 
         if conversation_history:
@@ -559,32 +563,59 @@ class RAGOrchestrator:
         retrieved_context: str,
         query: str,
     ) -> list[dict]:
-        """Build structured chat messages for the LLM.
-
-        Returns a list of message dicts with ``role`` and ``content`` keys.
-        Uses ``system`` role for grounding rules and context, and ``user``
-        role for conversation history and the current question.  This format
-        produces much better results with free OpenRouter models.
         """
+        Build structured chat messages for the LLM.
+
+        The system message contains:
+            - assistant behaviour rules
+            - conversation history
+            - retrieved TechStore knowledge
+
+        The user message contains only the latest user question.
+
+        This format works well with OpenRouter's OpenAI-compatible
+        chat-completions API and preserves the expected prompt structure
+        used by the test suite.
+        """
+
+        # --------------------------------------------------------------
+        # System message
+        # --------------------------------------------------------------
 
         system_parts: list[str] = [
             _SYSTEM_INSTRUCTIONS,
         ]
 
+        # --------------------------------------------------------------
+        # Conversation history
+        # --------------------------------------------------------------
+
         if conversation_history:
             system_parts.append(
-                f"Conversation History:\n{conversation_history}"
+                f"Conversation History:\n"
+                f"{conversation_history}"
             )
+
+        # --------------------------------------------------------------
+        # Retrieved knowledge
+        # --------------------------------------------------------------
 
         if retrieved_context:
             system_parts.append(
-                f"Retrieved Knowledge:\n{retrieved_context}"
+                f"Retrieved Knowledge:\n"
+                f"{retrieved_context}"
             )
+
+        system_content = "\n\n".join(system_parts)
+
+        # --------------------------------------------------------------
+        # Final structured messages
+        # --------------------------------------------------------------
 
         messages: list[dict] = [
             {
                 "role": "system",
-                "content": "\n\n".join(system_parts),
+                "content": system_content,
             },
             {
                 "role": "user",
@@ -598,24 +629,40 @@ class RAGOrchestrator:
     # LLM
     # ------------------------------------------------------------------
 
-    def _generate_response(self, messages: list[dict]) -> str:
-        """Generate the response through the injected LLM provider.
+    def _generate_response(
+        self,
+        messages: list[dict],
+    ) -> str:
+        """
+        Generate the response through the injected LLM provider.
 
         Uses ``generate_messages()`` when available for structured chat
-        formatting (system + user roles).  Falls back to ``generate()``
-        with a concatenated prompt for providers that don't support it.
+        formatting.
+
+        Falls back to ``generate()`` with a concatenated prompt for
+        providers that don't support structured messages.
         """
 
         try:
-            if hasattr(self._llm_provider, "generate_messages"):
-                response = self._llm_provider.generate_messages(messages)
-            else:
-                # Fallback: concatenate all messages into a single prompt
-                prompt = "\n\n".join(
-                    f"[{m['role'].upper()}]\n{m['content']}"
-                    for m in messages
+            if hasattr(
+                self._llm_provider,
+                "generate_messages",
+            ):
+                response = self._llm_provider.generate_messages(
+                    messages
                 )
-                response = self._llm_provider.generate(prompt)
+
+            else:
+                # Fallback for providers that only support generate().
+                prompt = "\n\n".join(
+                    f"[{message['role'].upper()}]\n"
+                    f"{message['content']}"
+                    for message in messages
+                )
+
+                response = self._llm_provider.generate(
+                    prompt
+                )
 
             if not isinstance(response, str) or not response.strip():
                 raise LLMException(

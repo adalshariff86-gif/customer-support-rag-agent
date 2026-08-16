@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'motion/react';
-import { 
-  User, 
-  Cpu, 
-  Copy, 
-  Check, 
-  RotateCcw, 
-  BookOpen, 
-  Zap, 
+import {
+  User,
+  Cpu,
+  Copy,
+  Check,
+  RotateCcw,
+  BookOpen,
+  Zap,
   Terminal,
   ExternalLink,
   Code2
@@ -67,18 +67,18 @@ const FormattedContent: React.FC<{ content: string; isUser: boolean }> = ({ cont
         if (part.type === 'text') {
           return (
             <div key={idx} className="text-xs sm:text-sm">
-              <ReactMarkdown 
+              <ReactMarkdown
                 components={{
-                p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed inline-block" {...props} />,
-                ul: ({node, ...props}) => <ul className="list-disc ml-5 mb-2 space-y-1" {...props} />,
-                ol: ({node, ...props}) => <ol className="list-decimal ml-5 mb-2 space-y-1" {...props} />,
-                li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                code: ({node, inline, className, children, ...props}: any) => 
-                  inline ? <code className="bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded text-[11px]" {...props}>{children}</code> : <code {...props}>{children}</code>
-              }}
-            >
-              {part.text}
+                  p: ({ node, ...props }) => <p className="mb-2 last:mb-0 leading-relaxed inline-block" {...props} />,
+                  ul: ({ node, ...props }) => <ul className="list-disc ml-5 mb-2 space-y-1" {...props} />,
+                  ol: ({ node, ...props }) => <ol className="list-decimal ml-5 mb-2 space-y-1" {...props} />,
+                  li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+                  strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
+                  code: ({ node, inline, className, children, ...props }: any) =>
+                    inline ? <code className="bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded text-[11px]" {...props}>{children}</code> : <code {...props}>{children}</code>
+                }}
+              >
+                {part.text}
               </ReactMarkdown>
             </div>
           );
@@ -158,11 +158,10 @@ export const ChatMessageItem: React.FC<Props> = ({ message }) => {
       <div className={`space-y-2 max-w-[92%] sm:max-w-[82%] ${isUser ? 'items-end' : 'items-start'}`}>
         {/* Message Bubble Container */}
         <div
-          className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed font-sans shadow-sm ${
-            isUser
+          className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed font-sans shadow-sm ${isUser
               ? 'bg-indigo-600 text-white rounded-tr-sm'
               : 'bg-zinc-100/90 dark:bg-[#11151F] text-zinc-800 dark:text-slate-200 border border-zinc-200/80 dark:border-zinc-800/80 rounded-tl-sm'
-          }`}
+            }`}
         >
           {/* Main Content with Code formatting */}
           <FormattedContent content={message.content} isUser={isUser} />
@@ -214,8 +213,8 @@ export const ChatMessageItem: React.FC<Props> = ({ message }) => {
           {/* Developer Metrics Pill */}
           {!isUser && developerMode && message.metrics && (
             <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-              <Zap className="w-3 h-3 text-amber-500" />
-              {message.metrics.total_latency_ms}ms | {message.metrics.model || 'Gemini 3.5 Flash'}
+              <Zap className="w-3 h-3 text{message.metrics.total_latency_ms}ms -amber-500" />
+
             </span>
           )}
         </div>

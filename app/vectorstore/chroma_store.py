@@ -391,13 +391,33 @@ class ChromaVectorStore(VectorStore):
 
             for offset in range(0, total, batch_size):
                 end = min(offset + batch_size, total)
+                batch_ids = ids[offset:end]
+                batch_docs = texts[offset:end]
+                batch_embs = [
+                    list(map(float, emb)) for emb in embeddings[offset:end]
+                ]
+                batch_metas = [self._flatten_metadata(m) for m in metadatas[offset:end]]
+                print("\n========== CHROMA ADD DEBUG ==========")
+                print("IDS:", batch_ids)
+                print("IDS TYPES:", [type(x) for x in batch_ids])
+
+                print("DOCS:", batch_docs)
+                print("DOC TYPES:", [type(x) for x in batch_docs])
+
+                print("EMBEDDINGS OUTER:", type(batch_embs), len(batch_embs))
+                print("EMBEDDING TYPES:", [type(x) for x in batch_embs])
+                print("EMBEDDING LENS:", [len(x) for x in batch_embs])
+                print("EMBEDDING VALUE TYPES:", type(batch_embs[0][0]))
+
+                print("METADATA:", batch_metas)
+                print("METADATA TYPES:", [type(x) for x in batch_metas])
+
+                print("======================================\n")
                 collection.add(
-                    ids=ids[offset:end],
-                    documents=texts[offset:end],
-                    embeddings=embeddings[offset:end],
-                    metadatas=[
-                        self._flatten_metadata(m) for m in metadatas[offset:end]
-                    ],
+                    ids=batch_ids,
+                    documents=batch_docs,
+                    embeddings=batch_embs,
+                    metadatas=batch_metas,
                 )
 
             elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
@@ -412,7 +432,7 @@ class ChromaVectorStore(VectorStore):
         except (ValidationException, VectorStoreException):
             raise
         except Exception as exc:
-            logger.error(
+            logger.exception(
                 "Document insertion failed",
                 extra={"collection_name": collection_name, "error": str(exc)},
             )

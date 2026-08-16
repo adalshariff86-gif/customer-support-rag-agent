@@ -13,7 +13,8 @@ import {
 // ENVIRONMENT
 // ============================================================
 
-const BASE_URL = '';
+const BASE_URL =
+  import.meta.env.VITE_FASTAPI_BACKEND_URL || '';
 
 const API_KEY =
   import.meta.env.VITE_FASTAPI_API_KEY || '';
