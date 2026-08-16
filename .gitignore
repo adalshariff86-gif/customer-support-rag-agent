@@ -140,3 +140,8 @@ frontend/.env
 frontend/.env.local
 frontend/.env.*.local
 !frontend/.env.example
+# Local diagnostic / experimental test scripts
+test_archive/
+
+# Local diagnostic / experimental test scripts
+test_archive/
