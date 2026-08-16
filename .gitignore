@@ -1,36 +1,142 @@
-# Environment
-.env
+# ============================================================
+# Python
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
 .venv/
 venv/
 env/
+ENV/
+.env
+.env.*
+!.env.example
 
-# Python
-__pycache__/
-*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+coverage/
+
 *.egg-info/
 dist/
 build/
 
-# ChromaDB persistence
-.chromadb/
-data/chroma/
+# ============================================================
+# Environment / Secrets
+# ============================================================
 
-# IDE
+.env
+.env.*
+!.env.example
+
+# ============================================================
+# Logs
+# ============================================================
+
+*.log
+server.log
+server_out.log
+server_err.log
+
+# ============================================================
+# ChromaDB / Generated Vector Stores
+# ============================================================
+
+chroma_db/
+data/chroma*/
+*.sqlite3
+*.sqlite3-journal
+
+# ============================================================
+# Keep RAG Knowledge Base Documents
+# ============================================================
+# IMPORTANT:
+# data/documents/ contains the actual source documents
+# used by the RAG pipeline, so DO NOT ignore this folder.
+
+!data/
+!data/documents/
+!data/documents/*.md
+
+# ============================================================
+# Node / React / Vite
+# ============================================================
+
+node_modules/
+frontend/node_modules/
+
+frontend/dist/
+frontend/build/
+frontend/coverage/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+*.tsbuildinfo
+
+# ============================================================
+# Vite
+# ============================================================
+
+.vite/
+
+# ============================================================
+# OS Files
+# ============================================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# IDE / Editors
+# ============================================================
+
 .vscode/
 .idea/
 *.swp
+*.swo
 
-# OS
-.DS_Store
-Thumbs.db
+# Keep VS Code project recommendations/settings if desired
+!.vscode/extensions.json
+!.vscode/settings.json
 
-# Logs
-*.log
-logs/
+# ============================================================
+# Temporary Files
+# ============================================================
 
-# Local ChromaDB / runtime data
-chroma_db/
-data/
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+*~
 
-# Local/debug scripts
-test_*.py
+# ============================================================
+# Python / Test Temporary Files
+# ============================================================
+
+.pytest_cache/
+.hypothesis/
+
+# ============================================================
+# Local Development / Generated Files
+# ============================================================
+
+*.pid
+*.seed
+
+# ============================================================
+# Frontend Environment Files
+# ============================================================
+
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+!frontend/.env.example
